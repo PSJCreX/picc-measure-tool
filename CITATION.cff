@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+title: "PICC web measurement tool"
+message: "If you use this software, please cite it using these metadata."
+type: software
+abstract: >-
+  A web-based tool for collecting expert endpoint measurements, with
+  per-item timing, on chest radiographs. Built to provide the reader arm
+  of an AI-versus-radiologist comparison for PICC insertion-length
+  prediction.
+authors:
+  - family-names: "<FAMILY NAME>"
+    given-names: "<GIVEN NAMES>"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+    affiliation: "<AFFILIATION>"
+license: MIT
+repository-code: "https://github.com/<OWNER>/<REPO>"
+version: "1.0.0"
+date-released: "2026-__-__"
+keywords:
+  - radiology
+  - chest radiograph
+  - PICC
+  - interobserver agreement
+  - reader study

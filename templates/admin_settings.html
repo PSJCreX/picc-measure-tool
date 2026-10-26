@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}설정 · {{ APP_TITLE }}{% endblock %}
+{% block content %}
+
+<div class="page-head"><h1>설정</h1></div>
+{% if flash %}<p class="flash">{{ flash }}</p>{% endif %}
+
+<div class="card">
+  <h2>불일치 판정</h2>
+  <form method="post" action="/admin/settings">
+    <div class="field">
+      <label for="tolerance_mm">허용범위 (mm)</label>
+      <input type="text" id="tolerance_mm" name="tolerance_mm"
+             value="{{ settings.tolerance_mm }}" required />
+      <div class="field-hint">
+        같은 영상·같은 변수에 대한 계측자들의 값 중
+        <b>(최댓값 − 최솟값)이 이 값을 넘으면 불일치</b>로 판정합니다.
+        모든 변수에 동일하게 적용되는 전역 값입니다.<br />
+        값을 바꾸면 전체 영상이 즉시 재분류됩니다. 계측값 자체는 바뀌지 않습니다 — 이 값은 <b>계측자 간 차이를 얼마까지 같다고 볼지</b>를 정하는 보고용 기준입니다.
+      </div>
+    </div>
+
+    <h2 style="margin-top:1.4rem">계측 화면</h2>
+    <div class="field">
+      <label for="render_max_px">렌더 해상도 (긴 변, px)</label>
+      <input type="text" id="render_max_px" name="render_max_px"
+             value="{{ settings.render_max_px }}" required />
+      <div class="field-hint">
+        기본 {{ defaults.render_max_px }}px. 값을 키우면 계측 정밀도가 올라가지만
+        저장 용량과 전송량이 늘어납니다. <b>이미 등재된 영상에는 소급 적용되지 않습니다</b>
+        (다시 업로드해야 새 해상도로 렌더됩니다).
+      </div>
+    </div>
+    <div class="field">
+      <label for="idle_lock_ms">무조작 잠금까지 (ms)</label>
+      <input type="text" id="idle_lock_ms" name="idle_lock_ms"
+             value="{{ settings.idle_lock_ms }}" required />
+      <div class="field-hint">
+        기본 {{ defaults.idle_lock_ms }}ms(60초). 이 시간 동안 조작이 없으면 화면을 잠그고
+        경과 시간 측정을 멈춥니다 — 자리를 비운 시간이 계측 소요시간에 섞이지 않게 합니다.
+      </div>
+    </div>
+    <div class="field">
+      <label for="idle_phase1_ms">잠금 2단계 전환까지 (ms)</label>
+      <input type="text" id="idle_phase1_ms" name="idle_phase1_ms"
+             value="{{ settings.idle_phase1_ms }}" required />
+      <div class="field-hint">
+        기본 {{ defaults.idle_phase1_ms }}ms(10초). 1단계 안내에도 반응이 없으면
+        '새로 시작'만 가능한 2단계로 넘어갑니다.
+      </div>
+    </div>
+
+    <div class="field" style="margin-top:1rem; padding-top:0.9rem; border-top:1px solid var(--line)">
+    <label class="det-check" style="font-size:0.95rem; color:var(--ink)">
+      <input type="checkbox" name="reviewer_review_access" value="1"
+             {% if gate_open %}checked{% endif %} />
+      <b>계측을 끝낸 계측자에게 비교 화면을 공개</b>
+    </label>
+    <div class="field-hint">
+      켜면 계측자가 로그인 시 <b>매트릭스 화면</b>으로 가고, 서로의 계측값과
+      <b>AI 예측까지</b> 봅니다. <b>눈가림이 깨집니다.</b><br />
+      ⚠️ <b>계측이 전부 끝난 뒤에만 켜세요.</b> 아직 올리지 않은 영상이 있으면
+      "남은 작업 0" 이어도 연구가 끝난 게 아닙니다 — 남의 값과 AI 를 본 뒤 재는
+      계측은 오염된 자료가 됩니다.<br />
+      켜더라도 <b>남은 작업이 있는 계측자에게는 열리지 않습니다.</b>
+    </div>
+    {% if gate_rows %}
+    <table class="small" style="margin-top:0.5rem">
+      <thead><tr><th>계측자</th><th class="num">남은 작업</th><th>공개 시</th></tr></thead>
+      <tbody>
+        {% for g in gate_rows %}
+        <tr>
+          <td>{{ g.name }} <span class="muted small">{{ g.username }}</span></td>
+          <td class="num mono{% if g.remaining %} mm-bad{% endif %}">{{ g.remaining }}</td>
+          <td class="small">
+            {% if g.remaining %}<span class="muted">닫힘 (계측 미완)</span>
+            {% else %}<span class="chip mm-ok">열림</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+
+  <button class="primary" type="submit">저장</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>픽셀 스페이싱 수동 보정</h2>
+  {% if not no_spacing %}
+    <p class="small muted" style="margin:0">
+      모든 영상의 스페이싱이 확인되었습니다.
+      (<code>PixelSpacing</code> → <code>ImagerPixelSpacing</code> 순으로 해석)
+    </p>
+  {% else %}
+    <p class="notice">
+      스페이싱을 읽지 못한 영상 {{ no_spacing|length }}건. 값을 넣으면
+      해당 영상의 기존 계측이 모두 다시 계산됩니다.
+    </p>
+    <table>
+      <thead><tr><th>ID</th><th>파일명</th><th>크기</th><th>mm/px</th></tr></thead>
+      <tbody>
+        {% for im in no_spacing %}
+        <tr>
+          <td class="mono">#{{ im.id }}</td>
+          <td class="mono small">{{ im.original_filename }}</td>
+          <td class="small">{{ im.orig_w }}×{{ im.orig_h }}</td>
+          <td>
+            <form method="post" action="/admin/image/{{ im.id }}/spacing" class="row">
+              <input type="hidden" name="redirect_to" value="/admin/settings" />
+              <input type="text" name="pixel_spacing_mm" placeholder="0.14"
+                     style="width:100px" required />
+              <button class="btn-sm" type="submit">적용</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>계측 변수</h2>
+  <p class="small muted">
+    변수 정의는 코드(<code>app/variables.py</code>)에 고정되어 있습니다 —
+    논문 회귀공식과 1:1로 대응해야 하므로 화면에서 바꾸지 않습니다.
+  </p>
+  <table>
+    <thead><tr><th>키</th><th>표시명</th><th class="num">공식 계수</th><th>JSON 형식</th></tr></thead>
+    <tbody>
+      {% for key, v in VARIABLES.items() %}
+      <tr>
+        <td class="mono small">{{ key }}</td>
+        <td>{{ v.display }}</td>
+        <td class="num">{{ v.coeff }}</td>
+        <td class="mono small">{{ v.ann_shape }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

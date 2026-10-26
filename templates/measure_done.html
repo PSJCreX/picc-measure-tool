@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}계측 완료 · {{ APP_TITLE }}{% endblock %}
+{% set active = 'measure' %}
+{% block content %}
+<div class="page-head">
+  <h1>{% if is_practice %}연습할 영상이 없습니다{% else %}계측할 영상이 없습니다{% endif %}</h1>
+</div>
+
+<div class="card">
+  {% if is_practice %}
+    {% if progress.n_images == 0 %}
+    <p class="lead" style="margin-top:0">
+      아직 <b>연습용 영상이 등재되지 않았습니다.</b>
+      관리자가 업로드하면 여기에 연습 문제가 나타납니다.<br />
+      바로 본 계측을 시작하시려면 상단의 <b>실제 계측</b>으로 전환하세요.
+    </p>
+    {% else %}
+    <p class="lead" style="margin-top:0">
+      연습 문제(영상 {{ progress.n_images }}장 × 항목 {{ progress.n_variables }}개)를
+      모두 끝내셨습니다.<br />
+      아래에서 연습 기록을 비우면 <b>같은 영상으로 처음부터 다시</b> 연습할 수 있습니다.
+    </p>
+    <form method="post" action="/measure/practice/clear" style="margin:0 0 0.8rem"
+          onsubmit="return confirm('연습 기록을 전부 지우고 처음부터 다시 연습합니다. 계속할까요?
+(실제 계측 기록은 그대로 남습니다)');">
+      <button type="submit" class="btn primary">연습 기록 비우고 다시 연습</button>
+    </form>
+    {% endif %}
+  {% else %}
+  <p class="lead" style="margin-top:0">
+    모든 문제(영상 {{ progress.n_images }}장 × 항목 {{ progress.n_variables }}개)를
+    끝내셨습니다. 감사합니다.<br />
+    새 영상이 등재되면 이 화면에 문제가 다시 나타납니다.
+  </p>
+  {% endif %}
+  <div class="progress-meta">
+    <span>{{ progress.done }} / {{ progress.total }} 완료</span>
+    <span>{{ progress.pct }}%</span>
+  </div>
+  <div class="bar"><div class="bar-fill ok" style="width: {{ progress.pct }}%"></div></div>
+  <p style="margin-top:1rem">
+    <a class="btn" href="/history">내 계측 이력 보기</a>
+    <a class="btn" href="/measure">새로고침</a>
+  </p>
+</div>
+
+{% if peers|length > 1 and not is_practice %}
+<div class="card">
+  <h2>계측자 현황</h2>
+  <table>
+    <thead><tr><th>계측자</th><th class="num">완료</th><th class="num">진행률</th></tr></thead>
+    <tbody>
+      {% for p in peers %}
+      <tr>
+        <td{% if p.is_self %} style="font-weight:700"{% endif %}>{{ p.name }}</td>
+        <td class="num">{{ p.done }} / {{ p.total }}</td>
+        <td class="num">{{ p.pct }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

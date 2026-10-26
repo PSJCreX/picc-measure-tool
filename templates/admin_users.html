@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}사용자 · {{ APP_TITLE }}{% endblock %}
+{% block main_class %}shell-wide{% endblock %}
+{% block content %}
+
+<div class="page-head"><h1>사용자</h1></div>
+
+{% if flash %}<p class="flash">{{ flash }}</p>{% endif %}
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<div class="card">
+  <h2>계정 추가</h2>
+  <form method="post" action="/admin/users/create" class="row">
+    <div style="flex:1; min-width:150px">
+      <label for="username">아이디</label>
+      <input type="text" id="username" name="username" required
+             pattern="[A-Za-z0-9_.\-]{2,40}" />
+    </div>
+    <div style="flex:1; min-width:150px">
+      <label for="full_name">표시 이름</label>
+      <input type="text" id="full_name" name="full_name" placeholder="홍길동" />
+    </div>
+    <div style="min-width:140px">
+      <label for="role">역할</label>
+      <select id="role" name="role">
+        <option value="reviewer">계측자</option>
+        <option value="admin">관리자</option>
+      </select>
+    </div>
+    <button class="primary" type="submit">생성</button>
+  </form>
+  <p class="field-hint" style="margin-top:0.5rem">
+    임시 비밀번호가 화면에 한 번만 표시됩니다. 첫 로그인 시 변경이 강제됩니다.<br />
+    <b>관리자는 계측에 참여할 수 없습니다</b> — 관찰자간 일치도 집계가 오염되지 않도록 역할을 분리했습니다.
+  </p>
+</div>
+
+<div class="card">
+  <h2>계정 목록</h2>
+  <div class="table-wrap" style="max-height:none">
+    <table>
+      <thead>
+        <tr>
+          <th>아이디</th><th>이름</th><th>역할</th><th>상태</th>
+          <th class="num">제출</th><th>관리</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="mono">{{ u.username }}{% if u.id == me.id %} <span class="muted small">(나)</span>{% endif %}</td>
+          <td>
+            <details class="inline-form">
+              <summary>{{ u.full_name or '—' }}</summary>
+              <form method="post" action="/admin/users/{{ u.id }}/name" class="row">
+                <input type="text" name="full_name" value="{{ u.full_name }}" style="width:150px" />
+                <button class="btn-sm" type="submit">저장</button>
+              </form>
+            </details>
+          </td>
+          <td>
+            <form method="post" action="/admin/users/{{ u.id }}/role" class="row">
+              <select name="role" style="width:auto" {% if u.id == me.id %}disabled{% endif %}>
+                <option value="reviewer" {% if u.role=='reviewer' %}selected{% endif %}>계측자</option>
+                <option value="admin" {% if u.role=='admin' %}selected{% endif %}>관리자</option>
+              </select>
+              {% if u.id != me.id %}<button class="btn-sm" type="submit">변경</button>{% endif %}
+            </form>
+          </td>
+          <td>
+            {% if u.is_active %}
+              <span class="chip mm-ok">활성</span>
+            {% else %}
+              <span class="chip mm-bad">비활성</span>
+            {% endif %}
+            {% if u.must_change_password %}<span class="chip">비번변경 필요</span>{% endif %}
+          </td>
+          <td class="num">{{ counts.get(u.id, 0) }}</td>
+          <td class="nowrap">
+            <form method="post" action="/admin/users/{{ u.id }}/password" class="inline">
+              <button class="btn-sm" type="submit">비번 초기화</button>
+            </form>
+            {% if u.id != me.id %}
+            <form method="post" action="/admin/users/{{ u.id }}/toggle" class="inline">
+              <button class="btn-sm" type="submit">{{ '비활성화' if u.is_active else '활성화' }}</button>
+            </form>
+            <details class="inline-form" style="display:inline-block">
+              <summary style="display:inline">삭제</summary>
+              <form method="post" action="/admin/users/{{ u.id }}/delete" class="row"
+                    style="margin-top:0.4rem">
+                <input type="text" name="confirm" placeholder="{{ u.username }}"
+                       style="width:130px" />
+                <button class="btn-sm btn-danger" type="submit">영구 삭제</button>
+              </form>
+            </details>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="field-hint" style="margin-top:0.6rem">
+    계측 기록이 있는 계정은 삭제되지 않습니다. 연구 데이터가 사라지지 않도록
+    <b>비활성화</b>를 사용하세요 — 비활성 계정의 값은 일치도 집계에서 빠지지만 DB에는 남습니다.
+  </p>
+</div>
+{% endblock %}

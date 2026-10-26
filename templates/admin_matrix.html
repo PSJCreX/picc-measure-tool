@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}{{ '불일치' if only_mismatch else '매트릭스' }} · {{ APP_TITLE }}{% endblock %}
+{% block main_class %}shell-wide{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>{{ '불일치 목록' if only_mismatch else '계측 매트릭스' }}</h1>
+    <p class="lead">
+      허용범위 <b>{{ tolerance_mm }} mm</b> 초과 시 불일치 ·
+      전부 일치 {{ counts.agree }} / 불일치 포함 {{ counts.mismatch }} /
+      일부 {{ counts.partial }} / 없음 {{ counts.empty }} ·
+      항목 단위 불일치 {{ counts.variable_mismatches }}건
+    </p>
+  </div>
+  <div>
+    {% if only_mismatch %}
+      <a class="btn" href="/admin/matrix">전체 보기</a>
+    {% else %}
+      {% if me.role == 'admin' %}<a class="btn" href="/admin/disagreements">불일치만 보기</a>{% endif %}
+    {% endif %}
+    {% if me.role == 'admin' %}<a class="btn" href="/admin/export">내보내기</a>{% endif %}
+  </div>
+</div>
+
+<div class="legend">
+  <span><span class="swatch" style="background:#fff;box-shadow:inset 3px 0 #15803d"></span> 전부 일치</span>
+  <span><span class="swatch" style="background:#fce4e4"></span> 불일치 포함</span>
+  <span><span class="swatch" style="background:#e3f2fd"></span> 일부만 계측</span>
+  <span><span class="swatch" style="background:#f5f5f4"></span> 계측 없음</span>
+</div>
+
+{% if not reviewers %}
+<p class="notice">활성 계측자 계정이 없습니다.{% if me.role == 'admin' %} <a href="/admin/users">사용자 관리</a>에서 추가하세요.{% endif %}</p>
+{% endif %}
+
+<div class="grid" style="grid-template-columns: minmax(0, 1fr) {% if focus %}404px{% else %}0{% endif %}; gap:1rem">
+
+  <!-- ── 표 ── -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>영상</th>
+          <th>판정</th>
+          {% for u in reviewers %}
+          <th>{{ u.display_label() }}</th>
+          {% endfor %}
+          <th class="num">2인+</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr class="kind-{{ row.kind }} clickable{% if focus and focus.image.id == row.image.id %} row-selected{% endif %}"
+            onclick="location.href='/admin/matrix/image/{{ row.image.id }}?back={{ '/admin/disagreements' if only_mismatch else '/admin/matrix' }}'">
+          <td class="mono small nowrap">
+            #{{ row.image.id }}<br />
+            <span class="muted">{{ row.image.original_filename[:22] }}</span>
+          </td>
+          <td class="small nowrap">
+            {{ KIND_LABELS.get(row.kind, row.kind) }}
+            <span class="muted">{{ row.n_measured }}/{{ row.n_expected }}</span>
+          </td>
+          {% for cell in row.cells %}
+          <td>
+            {% if cell.n_done == 0 %}
+              <span class="muted small">미계측</span>
+            {% else %}
+              {% for v in cell.vals %}
+                {% if v.mm is not none %}
+                <span class="chip {% if v.mismatch %}mm-bad{% else %}mm-ok{% endif %}"
+                      title="{{ v.short }} {{ v.mm }} mm{% if v.ms %} · {{ (v.ms / 1000)|round(1) }}초{% endif %}">
+                  {{ v.short }} {{ v.mm }}
+                </span>
+                {% endif %}
+              {% endfor %}
+              <div class="muted small">{{ cell.n_done }}/{{ VARIABLE_KEYS|length }} 항목</div>
+            {% endif %}
+          </td>
+          {% endfor %}
+          <td class="num small">
+            {% if row.n_paired %}{{ row.n_paired }}/{{ row.var_keys|length }}
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not rows %}
+        <tr><td colspan="{{ 3 + reviewers|length }}" class="muted"
+                style="text-align:center; padding:2rem">
+          {{ '허용범위를 넘은 영상이 없습니다.' if only_mismatch else '등재된 영상이 없습니다.' }}
+        </td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── 상세 패널 ── -->
+  {% if focus %}
+  <aside class="focus-panel">
+    <div class="card">
+      <h2>영상 #{{ focus.image.id }}</h2>
+      <dl class="kv">
+        <dt>파일</dt><dd class="small">{{ focus.image.original_filename }}</dd>
+        <dt>크기</dt><dd>{{ focus.image.orig_w }}×{{ focus.image.orig_h }}</dd>
+        <dt>스페이싱</dt>
+        <dd>
+          {% if focus.image.has_spacing %}
+            {{ "%.5f"|format(focus.image.pixel_spacing_mm) }} mm
+            <span class="muted small">{{ focus.image.spacing_source }}</span>
+          {% else %}<span class="chip mm-bad">미상</span>{% endif %}
+        </dd>
+        <dt>판정</dt><dd>{{ KIND_LABELS.get(focus.kind, focus.kind) }}</dd>
+        <dt>계측</dt><dd>{{ focus.n_measured }} / {{ focus.n_expected }}</dd>
+      </dl>
+      <p style="margin:0.7rem 0 0">
+        <a class="btn btn-sm" href="/admin/image/{{ focus.image.id }}/png" target="_blank">영상 보기</a>
+        {% if me.role == 'admin' %}<a class="btn btn-sm" href="/admin/export/dicom/{{ focus.image.id }}">DICOM 받기</a>{% endif %}
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>항목별 계측 비교</h2>
+      {% for key in focus.var_keys %}
+        {% set va = focus.agreement.per_variable.get(key) if focus.agreement else none %}
+        <div style="border-top:1px solid var(--line); padding-top:0.6rem; margin-top:0.6rem">
+          <div style="display:flex; justify-content:space-between; align-items:baseline">
+            <b>{{ VARIABLES[key].display }}</b>
+            <span class="small {% if va and va.kind == 'mismatch' %}mm-bad chip{% endif %}">
+              {% if va %}{{ KIND_LABELS.get(va.kind, va.kind) }}{% endif %}
+              {% if va and va.spread_mm is not none %}
+                차이 {{ "%.1f"|format(va.spread_mm) }}mm
+              {% endif %}
+            </span>
+          </div>
+
+          <div style="margin:0.35rem 0">
+            {% for cell in focus.cells %}
+              {% set mm = va.values.get(cell.user.id) if va else none %}
+              <span class="chip {% if mm is not none %}{% if va.kind == 'mismatch' %}mm-bad{% else %}mm-ok{% endif %}{% else %}none{% endif %}">
+                {{ cell.user.username }}: {{ "%.1f"|format(mm) if mm is not none else '—' }}
+              </span>
+            {% endfor %}
+          </div>
+
+        </div>
+      {% endfor %}
+    </div>
+
+{% if me.role == 'admin' %}
+{% if me.role == 'admin' %}
+    <div class="card">
+      <h3>영상 관리</h3>
+      {% if not focus.image.has_spacing %}
+      <form method="post" action="/admin/image/{{ focus.image.id }}/spacing" class="row">
+        <input type="hidden" name="redirect_to"
+               value="/admin/matrix?focus={{ focus.image.id }}" />
+        <div style="flex:1">
+          <label class="small">픽셀 스페이싱 수동 입력 (mm)</label>
+          <input type="text" name="pixel_spacing_mm" placeholder="0.14" required />
+        </div>
+        <button class="btn-sm" type="submit">적용</button>
+      </form>
+      <p class="field-hint">적용하면 이 영상의 모든 계측값이 다시 계산됩니다.</p>
+      {% endif %}
+      <details class="inline-form">
+        <summary>계측 풀에서 제외</summary>
+        <form method="post" action="/admin/image/{{ focus.image.id }}/remove" class="row">
+          <input type="hidden" name="redirect_to" value="/admin/matrix" />
+          <input type="text" name="confirm" placeholder="{{ focus.image.id }}"
+                 style="width:100px" />
+          <button class="btn-sm btn-danger" type="submit">제외</button>
+        </form>
+        <p class="field-hint">확인란에 영상 ID를 입력하세요. 계측 기록은 보존됩니다.</p>
+      </details>
+    </div>
+{% endif %}
+{% endif %}
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}영상 #{{ image.id }} · {{ APP_TITLE }}{% endblock %}
+{% block main_class %}shell-wide{% endblock %}
+{% block content %}
+
+{# 계측 매트릭스에서 한 행을 눌러 들어오는 하위 화면.
+   예전에는 우측에 좁은 패널로 숫자만 띄웠는데, 그걸로는 '누가 어디를 재서
+   벌어졌는가'를 알 수 없었다. 표가 있던 자리에 영상을 띄우고 계측자들의 선을
+   겹쳐 본다. #}
+
+<div class="page-head det-head">
+  <div class="det-head-left">
+    <a class="btn btn-sm det-back" href="{{ back }}">← 매트릭스로</a>
+    <div>
+      {# 이전/다음 — 매트릭스로 나가지 않고 영상을 넘길 수 있게.
+         들어온 목록(전체 또는 불일치)과 같은 범위 안에서 움직인다. #}
+      <h1 class="det-title">
+        <a class="det-nav{% if not prev_id %} det-nav-off{% endif %}"
+           {% if prev_id %}href="/admin/matrix/image/{{ prev_id }}?back={{ back }}"
+           title="이전 영상 (←)"{% else %}aria-disabled="true" title="첫 영상입니다"{% endif %}>‹</a>
+        <span>영상 #{{ image.id }}</span>
+        <a class="det-nav{% if not next_id %} det-nav-off{% endif %}"
+           {% if next_id %}href="/admin/matrix/image/{{ next_id }}?back={{ back }}"
+           title="다음 영상 (→)"{% else %}aria-disabled="true" title="마지막 영상입니다"{% endif %}>›</a>
+        {% if total %}
+        <span class="det-pos">{{ pos }} / {{ total }}{% if back.endswith('disagreements') %} 불일치{% endif %}</span>
+        {% endif %}
+      </h1>
+      <p class="lead det-sub">
+        {{ image.original_filename }} · {{ image.orig_w }}×{{ image.orig_h }}
+        {% if image.has_spacing %}
+          · {{ "%.5f"|format(image.pixel_spacing_mm) }} mm/px
+          <span class="muted small">{{ image.spacing_source }}</span>
+        {% else %}
+          · <span class="mm-bad">스페이싱 없음 — mm 환산 불가</span>
+        {% endif %}
+        · 판정 <b>{{ KIND_LABELS.get(agreement.kind, agreement.kind) }}</b>
+        (허용범위 {{ tolerance_mm }} mm)
+      </p>
+    </div>
+  </div>
+  <div class="row">
+    <a class="btn btn-sm" href="/admin/image/{{ image.id }}/png" target="_blank">원본 PNG</a>
+    {% if me.role == 'admin' %}<a class="btn btn-sm" href="/admin/export/dicom/{{ image.id }}">DICOM 받기</a>{% endif %}
+  </div>
+</div>
+
+<div class="det-wrap">
+
+  <!-- ── 토글 줄: 계측자 / 항목 ─────────────────────────────────────── -->
+  <div class="det-bar">
+    <div class="det-bar-group">
+      <span class="det-bar-label">계측자</span>
+      <div class="seg" role="group" aria-label="계측자 선택">
+        <button type="button" class="seg-btn seg-on" data-rater="all">전체 겹쳐 보기</button>
+        {% for r in raters %}
+        <button type="button" class="seg-btn" data-rater="{{ r.id }}"
+                {% if r.n == 0 %}disabled title="이 계측자는 아직 재지 않았습니다"{% endif %}>
+          <span class="det-swatch" style="background:{{ r.color }}"></span>{{ r.name }}
+          <span class="muted">{{ r.n }}</span>
+        </button>
+        {% endfor %}
+        {# AI 도 계측자처럼 따로 볼 수 있어야 한다. 예측이 없으면 비활성. #}
+        <button type="button" class="seg-btn" data-rater="ai" id="segAI" disabled
+                title="먼저 '모델로 계측' 을 실행하세요">
+          <span class="det-swatch det-swatch-ai"></span>AI
+          <span class="muted" id="segAIn">0</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="det-bar-group">
+      <span class="det-bar-label">항목</span>
+      <div class="seg" role="group" aria-label="항목 선택">
+        <button type="button" class="seg-btn seg-on" data-var="all">전부</button>
+        {% for v in per_variable %}
+        <button type="button" class="seg-btn{% if v.kind == 'mismatch' %} seg-flag{% endif %}"
+                data-var="{{ v.key }}"
+                {% if v.n == 0 %}disabled{% endif %}
+                title="{{ v.display }}{% if v.spread_mm is not none %} · 차이 {{ v.spread_mm }}mm{% endif %}">
+          {{ v.short }}{% if v.kind == 'mismatch' %} ⚠{% endif %}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="det-bar-group">
+      <button type="button" class="btn-sm" id="btnPredict">모델로 계측 ⟳</button>
+    </div>
+
+    <div class="det-bar-group det-bar-tools">
+      <button type="button" class="btn-sm" id="btnEnhance">강화 OFF</button>
+      <button type="button" class="btn-sm" id="btnFit">화면 맞춤 <kbd>0</kbd></button>
+      <label class="det-check">
+        <input type="checkbox" id="chkLabels" checked /> 이름표
+      </label>
+    </div>
+  </div>
+
+  <!-- ── 영상 + 겹쳐 그리기 ───────────────────────────────────────── -->
+  <div class="det-main">
+    <div class="det-canvas-wrap" id="canvasWrap">
+      <canvas id="detCanvas"></canvas>
+      <div class="det-hud" id="detHud">불러오는 중…</div>
+
+      {# AI 추론 진행 — 실제 단계를 그대로 보여준다.
+         모델 로드 → 전처리 → 워밍업 → 항목별 측정. 로드·워밍업은 측정에서
+         제외되는 구간이지만 사용자는 기다리므로 숨기지 않는다. #}
+      <div class="det-prog" id="detProg" hidden>
+        <div class="det-prog-box">
+          <div class="det-prog-stage" id="progStage">준비 중…</div>
+          <div class="det-prog-bar"><div class="det-prog-fill" id="progFill"></div></div>
+          <div class="det-prog-detail" id="progDetail"></div>
+          <ul class="det-prog-list" id="progList"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 우측: 항목별 값 비교 ── -->
+    <aside class="det-side">
+      <h2>계측값 (mm)</h2>
+      <table class="small det-cmp">
+        <thead>
+          <tr>
+            <th>항목</th>
+            {% for r in raters %}
+            <th class="num" title="{{ r.name }}">
+              <span class="det-swatch" style="background:{{ r.color }}"></span>{{ r.name }}
+            </th>
+            {% endfor %}
+            <th class="num det-cmp-ai"><span class="det-swatch det-swatch-ai"></span>AI</th>
+            <th class="num">차이</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in per_variable %}
+          <tr class="det-row" data-var="{{ v.key }}" data-kind="mm">
+            <td title="{{ v.display }}">{{ v.short }}</td>
+            {% for r in raters %}
+              {% set item = (r.lines | selectattr('key', 'equalto', v.key) | list | first) %}
+              <td class="num mono" data-cell="mm" data-rater="{{ r.id }}">
+                {% if item and item.value_mm is not none %}{{ "%.1f"|format(item.value_mm) }}{% else %}—{% endif %}
+              </td>
+            {% endfor %}
+            <td class="num mono" data-cell="mm" data-rater="ai">—</td>
+            <td class="num mono{% if v.kind == 'mismatch' %} mm-bad{% endif %}">
+              {% if v.spread_mm is not none %}{{ "%.1f"|format(v.spread_mm) }}{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="field-hint" style="margin-top:0.5rem">
+        <b class="det-legend-far">굵은 파랑</b> = 다른 값들과 가장 동떨어진 계측
+        (값 3개 이상일 때만 — 둘로는 어느 쪽이 벗어났는지 말할 수 없다).<br />
+        <b>차이</b>는 <b>사람끼리</b>의 최댓값−최솟값이다 — AI 는 넣지 않는다.
+        허용범위 {{ tolerance_mm }} mm 를 넘으면 ⚠ 다.
+      </p>
+
+      <h2 style="margin-top:1.1rem">소요시간 (ms)</h2>
+      <table class="small det-cmp">
+        <thead>
+          <tr>
+            <th>항목</th>
+            {% for r in raters %}
+            <th class="num" title="{{ r.name }}">
+              <span class="det-swatch" style="background:{{ r.color }}"></span>{{ r.name }}
+            </th>
+            {% endfor %}
+            <th class="num det-cmp-ai"><span class="det-swatch det-swatch-ai"></span>AI</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in times %}
+          <tr class="det-row" data-var="{{ t.key }}" data-kind="ms">
+            <td title="{{ t.display }}">{{ t.short }}</td>
+            {% for ms in t.cells %}
+            <td class="num mono" data-cell="ms" data-rater="human">
+              {% if ms %}{{ "{:,}".format(ms) }}{% else %}—{% endif %}
+            </td>
+            {% endfor %}
+            <td class="num mono" data-cell="ms" data-rater="ai">—</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="det-foot">
+            <td>중앙값</td>
+            {% for s in time_summary %}
+            <td class="num mono">
+              {% if s.median_ms %}{{ "{:,}".format(s.median_ms) }}{% else %}—{% endif %}
+            </td>
+            {% endfor %}
+            <td class="num mono" id="aiMedianMs">—</td>
+          </tr>
+          <tr class="det-foot">
+            <td>합계</td>
+            {% for s in time_summary %}
+            <td class="num mono">
+              {% if s.total_ms %}{{ "{:,}".format(s.total_ms) }}{% else %}—{% endif %}
+            </td>
+            {% endfor %}
+            <td class="num mono" id="aiTotalMs">—</td>
+          </tr>
+        </tfoot>
+      </table>
+      <p class="field-hint" style="margin-top:0.5rem">
+        <b class="det-legend-fast">굵은 빨강</b> = 그 항목에서 가장 빠른 계측.
+        단위는 모두 <b>ms</b> 로 통일했다.<br />
+        사람 시간은 <b>사진이 뜬 순간부터 마지막 점을 놓기까지</b>이고, AI 시간은
+        <b>모델 로드·워밍업을 뺀 순수 추론</b>(5회 중앙값)이다. 전처리(DICOM 읽기 +
+        512 리사이즈)는 영상당 한 번이라 별도로 기록한다.<br />
+        표의 한 줄을 누르면 그 항목만 영상에 남는다.
+      </p>
+    </aside>
+  </div>
+</div>
+
+<script id="detailData" type="application/json">
+{{ {
+  "imageId": image.id,
+  "pngUrl": png_url,
+  "pngEnhUrl": png_enh_url,
+  "origW": image.orig_w,
+  "origH": image.orig_h,
+  "renderScale": image.render_scale,
+  "raters": raters
+} | tojson }}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ static_url('matrix_detail.js') }}"></script>
+{% endblock %}

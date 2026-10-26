@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 400" width="520" height="400"
+     role="img" aria-label="2 VBUs 계측 범위 모식도 — 척추체 상연에서 두 칸 아래 척추체 상연까지, 추간판 2개 포함">
+  <title>2 VBUs = 척추체 2개 + 추간판 2개</title>
+
+  <style>
+    .lbl   { font: 600 15px "Malgun Gothic", sans-serif; fill: #3f3f46; }
+    .lbl-d { font: italic 600 14px "Malgun Gothic", sans-serif; fill: #6b7280; }
+    .ok    { font: 700 15px "Malgun Gothic", sans-serif; fill: #a50034; }
+    .okS   { font: 700 13px "Malgun Gothic", sans-serif; fill: #a50034; }
+    .bad   { font: 700 13px "Malgun Gothic", sans-serif; fill: #b91c1c; }
+    .body  { fill: #e9e9ec; stroke: #c2c2c9; stroke-width: 1.5; }
+    .disc  { fill: #fef3c7; stroke: #e0c98a; stroke-width: 1.5; }
+  </style>
+
+  <defs>
+    <marker id="okArrow" viewBox="0 0 10 10" refX="5" refY="5"
+            markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a50034" />
+    </marker>
+  </defs>
+
+  <!-- ── 척추 기둥 ── -->
+  <!-- 위쪽 일부 (범위 밖) -->
+  <rect x="170" y="4"   width="130" height="20" rx="6" class="body" opacity="0.45" />
+
+  <rect x="170" y="30"  width="130" height="65" rx="7" class="body" />
+  <text x="235" y="68"  class="lbl"   text-anchor="middle">척추체 ①</text>
+
+  <rect x="170" y="95"  width="130" height="23" rx="4" class="disc" />
+  <text x="235" y="111" class="lbl-d" text-anchor="middle">추간판 ①</text>
+
+  <rect x="170" y="118" width="130" height="65" rx="7" class="body" />
+  <text x="235" y="156" class="lbl"   text-anchor="middle">척추체 ②</text>
+
+  <rect x="170" y="183" width="130" height="23" rx="4" class="disc" />
+  <text x="235" y="199" class="lbl-d" text-anchor="middle">추간판 ②</text>
+
+  <rect x="170" y="206" width="130" height="65" rx="7" class="body" />
+  <text x="235" y="244" class="lbl"   text-anchor="middle">척추체 ③</text>
+
+  <!-- 아래쪽 일부 (범위 밖) -->
+  <rect x="170" y="277" width="130" height="20" rx="6" class="body" opacity="0.45" />
+
+  <!-- ── 맞는 범위: 상연 → 두 칸 아래 상연 ── -->
+  <line x1="150" y1="30"  x2="345" y2="30"  stroke="#a50034" stroke-width="2" />
+  <line x1="150" y1="206" x2="345" y2="206" stroke="#a50034" stroke-width="2" />
+
+  <line x1="330" y1="30" x2="330" y2="206" stroke="#a50034" stroke-width="3"
+        marker-start="url(#okArrow)" marker-end="url(#okArrow)" />
+
+  <circle cx="235" cy="30"  r="7" fill="#a50034" />
+  <circle cx="235" cy="206" r="7" fill="#a50034" />
+
+  <text x="352" y="26"  class="okS">Point A · 척추체 ① 상연</text>
+  <text x="352" y="212" class="okS">Point B · 척추체 ③ 상연</text>
+  <text x="352" y="122" class="ok">2 VBUs</text>
+  <text x="352" y="142" class="okS">= 척추체 2 + 추간판 2</text>
+
+  <!-- ── 흔한 실수: 척추체 ②의 하연에서 멈춤 ── -->
+  <line x1="20" y1="183" x2="170" y2="183"
+        stroke="#b91c1c" stroke-width="2" stroke-dasharray="6 4" />
+  <line x1="35" y1="30" x2="35" y2="183" stroke="#b91c1c" stroke-width="2"
+        stroke-dasharray="6 4" opacity="0.75" />
+  <line x1="20" y1="30" x2="170" y2="30"
+        stroke="#b91c1c" stroke-width="2" stroke-dasharray="6 4" opacity="0.75" />
+
+  <text x="18" y="205" class="bad">✗ 흔한 실수</text>
+  <text x="18" y="223" class="bad">척추체 ②의 하연에서 멈춤</text>
+  <text x="18" y="241" class="bad">→ 추간판 ②가 빠져</text>
+  <text x="18" y="259" class="bad">　 한 디스크만큼 짧아짐</text>
+
+  <!-- ── 하단 요약 ── -->
+  <text x="18" y="308" class="lbl-d">척추체 ① = 기관 융기 하연 아래 첫 척추체</text>
+  <text x="18" y="340" class="lbl">두 점 사이를 지나가는 순서</text>
+  <text x="18" y="366" class="ok">척추체 → 추간판 → 척추체 → 추간판</text>
+  <text x="18" y="390" class="lbl-d">추간판이 두 번 들어갑니다.</text>
+</svg>

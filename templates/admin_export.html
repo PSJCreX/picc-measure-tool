@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}내보내기 · {{ APP_TITLE }}{% endblock %}
+{% block content %}
+
+<div class="page-head"><h1>연구용 데이터 내보내기</h1></div>
+<p class="lead">
+  계측자 각자의 계측값과 소요시간이 <b>합쳐지지 않은 채</b> 그대로 나갑니다.
+  허용범위 {{ tolerance_mm }} mm 기준의 계측자 간 차이 판정이 참고용으로 함께 들어갑니다.
+</p>
+
+<div class="grid grid-4" style="margin-bottom:1.2rem">
+  <div class="stat"><div class="stat-value">{{ n_measurements }}</div>
+    <div class="stat-label">유효 계측 ({{ n_questions }}×{{ n_reviewers }} 중)</div></div>
+  <div class="stat"><div class="stat-value">
+    {% if median_ms %}{{ (median_ms / 1000)|round(1) }}<span style="font-size:0.6em">s</span>{% else %}—{% endif %}
+  </div><div class="stat-label">항목당 소요시간 (중앙값)</div></div>
+  <div class="stat"><div class="stat-value">{{ n_redo }}</div>
+    <div class="stat-label">재측정 요청 (집계 제외)</div></div>
+  <div class="stat stat-bad"><div class="stat-value">{{ counts.variable_mismatches }}</div>
+    <div class="stat-label">불일치 항목</div></div>
+</div>
+
+<div class="card">
+  <h2>파일</h2>
+  <table>
+    <tbody>
+      <tr>
+        <td>
+          <b>measurements_wide.xlsx</b>
+          <div class="small muted">
+            행 = 영상. 계측자별 변수값·소요시간·계측자 간 차이를 옆으로 펼침.
+            사람이 훑어보며 검토할 때.
+          </div>
+        </td>
+        <td class="right nowrap"><a class="btn" href="/admin/export/wide.xlsx">받기</a></td>
+      </tr>
+      <tr>
+        <td>
+          <b>measurements_long.csv</b>
+          <div class="small muted">
+            행 = (영상 × 계측자 × 변수)의 tidy 포맷. R·SPSS에 그대로 넣어
+            ICC·Bland-Altman·비열등성 검정을 돌릴 수 있습니다. UTF-8 BOM.<br />
+            <b>가설 1</b>은 <code>value_mm</code>, <b>가설 2</b>는 <code>duration_ms</code>,
+            사람끼리의 변동폭은 <code>spread_mm</code> 열입니다.
+            <code>status='done'</code>만 유효하며 <code>'redo'</code>는 버려진 시도입니다.
+          </div>
+        </td>
+        <td class="right nowrap"><a class="btn" href="/admin/export/long.csv">받기</a></td>
+      </tr>
+      <tr>
+        <td>
+          <b>disagreements.xlsx</b>
+          <div class="small muted">
+            허용범위를 넘은 (영상, 변수)만. 차이 큰 순으로 정렬.
+            현재 {{ counts.variable_mismatches }}건.
+          </div>
+        </td>
+        <td class="right nowrap"><a class="btn" href="/admin/export/disagreements.xlsx">받기</a></td>
+      </tr>
+      <tr>
+        <td>
+          <b>picc_data_bundle.zip</b>
+          <div class="small muted">
+            위 3종 + <b>계측자별</b> 좌표를 학습용 어노테이션 JSON으로 묶음
+            (<code>annotations/&lt;계측자&gt;/&lt;변수&gt;/</code> — 한 계측자분을 골라
+            <code>data/annotations/&lt;변수&gt;/</code>에 그대로 넣을 수 있는 포맷).
+          </div>
+        </td>
+        <td class="right nowrap"><a class="btn" href="/admin/export/bundle.zip">받기</a></td>
+      </tr>
+      <tr>
+        <td>
+          <b>picc_full_bundle.zip</b>
+          <div class="small muted">
+            위 전부 + 원본 DICOM + 렌더 PNG. <b>용량이 매우 큽니다</b>
+            (영상 {{ n_images }}장 기준 수 GB). 스트리밍으로 내려갑니다.
+          </div>
+        </td>
+        <td class="right nowrap"><a class="btn" href="/admin/export/bundle.zip?media=1">받기</a></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>계측 진행 현황</h2>
+  <div class="grid grid-3">
+    <div class="stat"><div class="stat-value">{{ n_paired }}</div>
+      <div class="stat-label">2인 이상이 잰 (영상×항목)</div></div>
+    <div class="stat"><div class="stat-value">{{ n_questions }}</div>
+      <div class="stat-label">전체 문제 ({{ n_images }}×8)</div></div>
+    <div class="stat"><div class="stat-value">{{ n_reviewers }}</div>
+      <div class="stat-label">활성 계측자</div></div>
+  </div>
+  <p class="small muted" style="margin-top:0.8rem; margin-bottom:0">
+    이 연구는 계측을 하나의 값으로 합의시키지 않습니다. 각자의 계측이 그대로
+    분석 대상이고, 위 숫자는 <b>AI와 맞대어 볼 수 있는 항목이 몇 개인가</b>를 뜻합니다.
+    계측자 간 차이가 허용범위를 넘은 항목은
+    <a href="/admin/disagreements">불일치 목록</a>에서 확인만 하시면 됩니다.
+  </p>
+</div>
+{% endblock %}

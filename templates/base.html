@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}{{ APP_TITLE }}{% endblock %}</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="{{ static_url('style.css') }}" />
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}{% if me and me.role != 'admin' and request.session.get('measure_pool') == 'practice' %} practice-mode{% endif %}">
+  {% if me %}
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        PICC<span class="brand-sub">계측 라벨링</span>
+      </div>
+      <nav>
+        {% if me.role == 'admin' %}
+          <a href="/admin"               class="{% if active=='dashboard' %}on{% endif %}">현황</a>
+          <a href="/admin/upload"        class="{% if active=='upload' %}on{% endif %}">업로드</a>
+          <a href="/admin/users"         class="{% if active=='users' %}on{% endif %}">사용자</a>
+          <a href="/admin/matrix"        class="{% if active=='matrix' %}on{% endif %}">매트릭스</a>
+          <a href="/admin/disagreements" class="{% if active=='disagreements' %}on{% endif %}">불일치</a>
+          <a href="/admin/settings"      class="{% if active=='settings' %}on{% endif %}">설정</a>
+          <a href="/admin/export"        class="{% if active=='export' %}on{% endif %}">내보내기</a>
+          <a href="/admin/reset"         class="{% if active=='reset' %}on{% endif %}">초기화</a>
+        {% else %}
+          {# 연습 ↔ 실제 계측. 지금 어느 쪽인지 한눈에 보여야 한다 —
+             연습인 줄 모르고 본 계측을 하거나 그 반대면 자료가 망가진다.
+             페이지마다 변수를 넘기면 빠뜨리는 화면이 생기므로 세션을 직접 읽는다. #}
+          {% set _practice = request.session.get('measure_pool') == 'practice' %}
+          <div class="seg" role="group" aria-label="계측 모드">
+            <form method="post" action="/measure/mode/practice" class="inline">
+              <button type="submit" class="seg-btn{% if _practice %} seg-on seg-practice{% endif %}"
+                      {% if _practice %}aria-current="true"{% endif %}>연습</button>
+            </form>
+            <form method="post" action="/measure/mode/real" class="inline">
+              <button type="submit" class="seg-btn{% if not _practice %} seg-on{% endif %}"
+                      {% if not _practice %}aria-current="true"{% endif %}>실제 계측</button>
+            </form>
+          </div>
+          <a href="/history" class="{% if active=='history' %}on{% endif %}">내 이력</a>
+          {# 계측을 끝낸 계측자에게만 열린다 (관리자가 공개를 켰을 때).
+             라우트 쪽에서도 같은 조건으로 막으므로 링크가 없다고 우회되지 않는다. #}
+          {% if matrix_open_for(request) %}
+          <a href="/admin/matrix" class="{% if active=='matrix' %}on{% endif %}">계측 비교</a>
+          {% endif %}
+        {% endif %}
+      </nav>
+      <div class="me">
+        <span class="badge badge-{{ me.role }}">{{ '관리자' if me.role == 'admin' else '계측자' }}</span>
+        <span class="me-user">{{ me.display_label() }}</span>
+        <a class="linkbtn" href="/change-password">비밀번호</a>
+        <form method="post" action="/logout" class="inline">
+          <button class="linkbtn" type="submit">로그아웃</button>
+        </form>
+      </div>
+    </div>
+  </header>
+  {% endif %}
+
+  <main class="{% block main_class %}shell{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}평가 중단 · {{ APP_TITLE }}{% endblock %}
+{% set active = 'measure' %}
+{% block content %}
+
+<div class="page-head"><h1>평가를 중단했습니다</h1></div>
+
+<div class="card">
+  <p class="lead" style="margin-top:0">
+    지금까지의 계측은 모두 저장되었습니다. 마지막으로 잰 항목도 포함됩니다.<br />
+    <b>다시 접속하시면 남은 문제부터 이어집니다</b> — 이미 답한 문제는 다시 나오지 않습니다.
+  </p>
+
+  <div class="progress-meta">
+    <span>{{ progress.done }} / {{ progress.total }} 완료</span>
+    <span>{{ progress.pct }}%</span>
+  </div>
+  <div class="bar"><div class="bar-fill{% if progress.pct >= 100 %} ok{% endif %}"
+       style="width: {{ progress.pct }}%"></div></div>
+  <p class="small muted" style="margin-top:0.4rem">
+    남은 문제 {{ progress.remaining }}개 · 영상 {{ progress.n_images }}장 ×
+    항목 {{ progress.n_variables }}개
+  </p>
+
+  <p style="margin-top:1.2rem">
+    <a class="btn btn-primary" href="/measure">이어서 계측하기</a>
+    <a class="btn" href="/history">내 계측 이력</a>
+    <a class="btn" href="/logout">로그아웃</a>
+  </p>
+</div>
+
+<div class="grid grid-3">
+  <div class="stat">
+    <div class="stat-value">{{ n_done }}</div>
+    <div class="stat-label">지금까지 계측한 항목</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">
+      {% if median_ms %}{{ (median_ms / 1000)|round(1) }}<span style="font-size:0.6em">s</span>{% else %}—{% endif %}
+    </div>
+    <div class="stat-label">항목당 소요시간 (중앙값)</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">{{ progress.remaining }}</div>
+    <div class="stat-label">남은 문제</div>
+  </div>
+</div>
+
+{% if answers %}
+<div class="card">
+  <h2>최근 계측</h2>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>영상</th><th class="num">값 (mm)</th>
+          <th class="num">소요</th><th class="num">시각</th></tr>
+    </thead>
+    <tbody>
+      {% for a in answers %}
+      <tr>
+        <td>{{ a.display }}</td>
+        <td class="mono small muted">#{{ a.imageId }}</td>
+        <td class="num">{{ "%.1f"|format(a.valueMm) if a.valueMm is not none else "—" }}</td>
+        <td class="num">{% if a.durationMs %}{{ (a.durationMs / 1000)|round(1) }}s{% else %}—{% endif %}</td>
+        <td class="num small muted">{{ a.at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

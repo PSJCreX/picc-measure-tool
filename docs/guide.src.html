@@ -1,0 +1,1240 @@
+<title>PICC 계측 라벨링</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>/*__FREESENTATION__*/</style>
+
+<style>
+  /* ── 토큰 ─────────────────────────────────────────────────────────────
+     중립색은 크림슨 쪽으로 아주 살짝 기울여 액센트와 한 벌로 읽히게 했다. */
+  :root {
+    --ground:      #fbf8f8;
+    --surface:     #ffffff;
+    --surface-2:   #f4efef;
+    --ink:         #1b1618;
+    --ink-2:       #4a4044;
+    --muted:       #7a6c70;
+    --line:        #e6dedf;
+    --line-strong: #cfc3c5;
+
+    --accent:      #a50034;   /* 고려대 크림슨 — 데스크톱 GUI와 같은 색 */
+    --accent-ink:  #ffffff;
+    --accent-tint: #f9ecef;
+
+    --ok:          #146b45;
+    --ok-tint:     #e6f2ec;
+    --flag:        #a8480a;   /* 불일치. 크림슨과 구분되도록 번트오렌지 */
+    --flag-tint:   #fbeee4;
+    --wait:        #35618f;
+    --wait-tint:   #e8eef6;
+
+    --film:        #131013;   /* 판독대 패널 */
+    --film-ink:    #ede7e8;
+    --film-line:   #2f2830;
+    --film-muted:  #8d8288;
+
+    --shadow: 0 1px 2px rgba(27,22,24,.05), 0 8px 24px rgba(27,22,24,.05);
+
+    /* 사이트 전반과 같은 서체(Freesentation, SIL OFL). 아티팩트는 외부 호스트를
+       못 부르므로 woff2를 data URI로 인라인했다. */
+    --display: "Freesentation", "맑은 고딕", "Malgun Gothic", system-ui, sans-serif;
+    --body: "Freesentation", "맑은 고딕", "Malgun Gothic", system-ui, sans-serif;
+    /* 숫자가 줄 맞아야 하는 곳만 고정폭. 한글이 섞이면 Freesentation으로 떨어진다. */
+    --mono: "IBM Plex Mono", ui-monospace, Consolas, "Freesentation", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #151113;
+      --surface:     #1d181a;
+      --surface-2:   #241e21;
+      --ink:         #f0eaeb;
+      --ink-2:       #ccc0c3;
+      --muted:       #9b8d91;
+      --line:        #322a2d;
+      --line-strong: #463c40;
+
+      --accent:      #ff6b8f;
+      --accent-ink:  #2a0710;
+      --accent-tint: #2e1620;
+
+      --ok:          #5fd39b;
+      --ok-tint:     #16291f;
+      --flag:        #f0a06a;
+      --flag-tint:   #2e1e13;
+      --wait:        #8fb8e8;
+      --wait-tint:   #172230;
+
+      --film:        #0d0b0d;
+      --film-ink:    #ede7e8;
+      --film-line:   #2a242a;
+      --film-muted:  #857a80;
+
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.32);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #151113;
+    --surface:     #1d181a;
+    --surface-2:   #241e21;
+    --ink:         #f0eaeb;
+    --ink-2:       #ccc0c3;
+    --muted:       #9b8d91;
+    --line:        #322a2d;
+    --line-strong: #463c40;
+
+    --accent:      #ff6b8f;
+    --accent-ink:  #2a0710;
+    --accent-tint: #2e1620;
+
+    --ok:          #5fd39b;
+    --ok-tint:     #16291f;
+    --flag:        #f0a06a;
+    --flag-tint:   #2e1e13;
+    --wait:        #8fb8e8;
+    --wait-tint:   #172230;
+
+    --film:        #0d0b0d;
+    --film-ink:    #ede7e8;
+    --film-line:   #2a242a;
+    --film-muted:  #857a80;
+
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.32);
+  }
+
+  /* ── 기본 ─────────────────────────────────────────────────────────── */
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.68;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 24px 120px; }
+
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+
+  h2 {
+    font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em;
+    line-height: 1.25;
+  }
+  h3 {
+    font-size: 1.03rem; font-weight: 700; letter-spacing: -.01em;
+    margin-bottom: .3em;
+  }
+
+  p { margin: 0; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+
+  code, .mono { font-family: var(--mono); font-size: .87em; }
+  code:not(pre code) {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: .08em .34em;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .7rem; font-weight: 600;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── 헤더 ─────────────────────────────────────────────────────────── */
+  .masthead {
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .masthead-inner {
+    max-width: 940px; margin: 0 auto; padding: 56px 24px 44px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .rule-accent {
+    width: 52px; height: 4px; border-radius: 2px;
+    background: var(--accent);
+  }
+  h1 {
+    font-size: clamp(2.1rem, 5.2vw, 3.1rem);
+    font-weight: 800; letter-spacing: -.035em; line-height: 1.08;
+  }
+  h1 .thin { font-weight: 500; color: var(--muted); display: block;
+             font-size: .42em; letter-spacing: -.01em; margin-top: .5em; }
+  .standfirst {
+    font-size: 1.09rem; color: var(--ink-2); max-width: 62ch;
+  }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 8px 20px;
+    font-family: var(--mono); font-size: .76rem; color: var(--muted);
+    padding-top: 6px; border-top: 1px solid var(--line);
+  }
+  .meta-row b { color: var(--ink-2); font-weight: 500; }
+
+  /* ── 목차 ─────────────────────────────────────────────────────────── */
+  nav.toc {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--ground) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav.toc ol {
+    max-width: 940px; margin: 0 auto; padding: 9px 24px;
+    list-style: none; display: flex; gap: 4px;
+    overflow-x: auto; scrollbar-width: thin;
+  }
+  nav.toc a {
+    display: block; white-space: nowrap; text-decoration: none;
+    font-size: .82rem; color: var(--ink-2);
+    padding: 4px 10px; border-radius: 999px;
+  }
+  nav.toc a:hover { background: var(--surface-2); color: var(--ink); }
+  nav.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* ── 섹션 ─────────────────────────────────────────────────────────── */
+  section { padding-top: 64px; }
+  .sec-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 22px; }
+  .sec-body { display: flex; flex-direction: column; gap: 20px; max-width: 68ch; }
+  .sec-body.wide { max-width: none; }
+
+  /* ── 카드 · 패널 ──────────────────────────────────────────────────── */
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px 22px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .grid { display: grid; gap: 14px; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+
+  .callout {
+    border-left: 3px solid var(--flag);
+    background: var(--flag-tint);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .callout .eyebrow { color: var(--flag); }
+
+  /* 판독대 패널 — 앱의 HUD를 그대로 옮겨 온 모티프 */
+  .film {
+    background: var(--film); color: var(--film-ink);
+    border-radius: 10px; padding: 20px 22px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .film h3 { color: var(--film-ink); }
+  .film .eyebrow { color: var(--film-muted); }
+  .film p { color: var(--film-muted); }
+
+  .readout {
+    display: grid; grid-template-columns: 1fr auto; gap: 2px 14px;
+    align-items: baseline;
+  }
+  .readout dt {
+    font-size: .88rem; color: var(--film-ink);
+    border-bottom: 1px dotted var(--film-line); padding-bottom: 5px;
+  }
+  .readout dd {
+    margin: 0; font-family: var(--mono); font-size: .88rem;
+    font-variant-numeric: tabular-nums; color: var(--film-ink);
+    border-bottom: 1px dotted var(--film-line); padding-bottom: 5px;
+    text-align: right;
+  }
+  .readout dd .unit { color: var(--film-muted); font-size: .82em; margin-left: 3px; }
+
+  /* ── 표 ───────────────────────────────────────────────────────────── */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--line);
+                  border-radius: 10px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); }
+  thead th {
+    font-family: var(--mono); font-size: .68rem; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+    background: var(--surface-2); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; font-family: var(--mono);
+                   font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.key { font-family: var(--mono); font-size: .82rem; white-space: nowrap; }
+
+  /* ── 상태 칩 ──────────────────────────────────────────────────────── */
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: .73rem; font-weight: 500;
+    padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .chip-ok   { background: var(--ok-tint);   color: var(--ok);   border-color: var(--ok); }
+  .chip-flag { background: var(--flag-tint); color: var(--flag); border-color: var(--flag); }
+  .chip-wait { background: var(--wait-tint); color: var(--wait); border-color: var(--wait); }
+  .chip-none { background: var(--surface-2); color: var(--muted); border-color: var(--line-strong); }
+
+  /* ── 순서 (실제 순차 절차라 번호를 쓴다) ─────────────────────────── */
+  ol.flow { list-style: none; margin: 0; padding: 0;
+            display: flex; flex-direction: column; gap: 0; counter-reset: s; }
+  ol.flow > li {
+    counter-increment: s;
+    display: grid; grid-template-columns: 34px 1fr; gap: 16px;
+    padding: 16px 0; border-top: 1px solid var(--line);
+  }
+  ol.flow > li:last-child { border-bottom: 1px solid var(--line); }
+  ol.flow > li::before {
+    content: counter(s, decimal-leading-zero);
+    font-family: var(--mono); font-size: .8rem; font-weight: 600;
+    color: var(--accent); padding-top: 2px;
+  }
+  ol.flow .step-body { display: flex; flex-direction: column; gap: 5px; }
+  ol.flow .step-body p { color: var(--ink-2); font-size: .93rem; }
+
+  ul.plain { margin: 0; padding-left: 1.15em; display: flex;
+             flex-direction: column; gap: 7px; color: var(--ink-2); }
+  ul.plain li::marker { color: var(--line-strong); }
+
+  /* ── 키 ───────────────────────────────────────────────────────────── */
+  kbd {
+    font-family: var(--mono); font-size: .78rem;
+    background: var(--surface-2); color: var(--ink);
+    border: 1px solid var(--line-strong); border-bottom-width: 2px;
+    border-radius: 5px; padding: 1px 6px; white-space: nowrap;
+  }
+  .keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+          gap: 7px 20px; }
+  .keys > div { display: flex; gap: 10px; align-items: baseline;
+                font-size: .9rem; color: var(--ink-2); }
+  .keys .k { flex: 0 0 84px; text-align: right; }
+
+  /* ── 코드 ─────────────────────────────────────────────────────────── */
+  pre {
+    margin: 0; background: var(--film); color: var(--film-ink);
+    border-radius: 10px; padding: 16px 18px; overflow-x: auto;
+    font-family: var(--mono); font-size: .82rem; line-height: 1.72;
+  }
+  pre .cm { color: var(--film-muted); }
+
+  /* ── 도해 ─────────────────────────────────────────────────────────── */
+  figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption { font-size: .84rem; color: var(--muted); max-width: 62ch; }
+
+  footer {
+    margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--line);
+    font-size: .84rem; color: var(--muted);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="rule-accent"></div>
+    <h1>PICC 계측 라벨링<span class="thin">AI와 전문의를 같은 test set에서 비교하기 위한 계측·시간 수집 도구</span></h1>
+    <p class="standfirst">
+      이 프로젝트의 모델이 <b>전문의만큼 정확하고 전문의보다 빠르다</b>는 것을
+      수치로 보이는 것이 논문의 목표다. 그러려면 같은 영상에 대한
+      <b>전문의의 계측값</b>과 <b>계측에 걸린 시간</b>이 필요하다.
+      이 도구는 그 둘을 전문의 2인 이상에게서 받아 낸다 —
+      한 번에 한 항목씩, 사진이 뜬 순간부터 손을 뗀 순간까지만 재면서.
+    </p>
+    <div class="meta-row">
+      <span>위치 <b>web_labeling/</b></span>
+      <span>스택 <b>FastAPI · SQLite · 바닐라 JS</b></span>
+      <span>접속 <b>http://&lt;서버주소&gt;:1531</b></span>
+      <span>작성 <b>2026-08-26</b></span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="문서 목차">
+  <ol>
+    <li><a href="#why">무엇을 증명하려는가</a></li>
+    <li><a href="#what">무엇을 계측하나</a></li>
+    <li><a href="#screen">계측 방식</a></li>
+    <li><a href="#time">시간 측정</a></li>
+    <li><a href="#agree">불일치 판정</a></li>
+    <li><a href="#mm">mm 환산</a></li>
+    <li><a href="#run">운영 순서</a></li>
+    <li><a href="#export">내보내기</a></li>
+    <li><a href="#reset">초기화</a></li>
+    <li><a href="#ops">배포와 운영</a></li>
+  </ol>
+</nav>
+
+<main class="wrap">
+
+  <!-- ─────────────────────────────────────────────── 왜 -->
+  <section id="why">
+    <div class="sec-head">
+      <span class="eyebrow">연구 목적</span>
+      <h2>무엇을 증명하려는가</h2>
+    </div>
+    <div class="sec-body">
+      <p>
+        가설은 둘이고, 방향이 서로 다르다.
+      </p>
+
+      <div class="grid grid-2" style="max-width:none">
+        <div class="card">
+          <span class="eyebrow">가설 1 · 정확도</span>
+          <h3>AI는 전문의보다 <span style="color:var(--ok)">열등하지 않다</span></h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            비열등성(non-inferiority). AI 예측이 전문의 계측과
+            임상적으로 무의미한 차이 안에 있음을 보인다.
+          </p>
+        </div>
+        <div class="card">
+          <span class="eyebrow">가설 2 · 속도</span>
+          <h3>AI는 전문의보다 <span style="color:var(--accent)">빠르다</span></h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            우월성(superiority). 영상 한 장을 계측하는 데 걸리는 시간을
+            직접 비교한다.
+          </p>
+        </div>
+      </div>
+
+      <p>
+        그래서 이 도구가 반드시 정확해야 하는 것도 둘이다 — <b>mm 계측값</b>과
+        <b>계측 소요시간</b>. 둘 중 하나라도 흔들리면 비교 자체가 성립하지 않는다.
+        문서의 나머지가 이 두 가지를 어떻게 지켜 내는지에 대부분의 지면을 쓰는 이유다.
+      </p>
+
+      <div class="film">
+        <span class="eyebrow">왜 한 명이 아니라 두 명 이상인가</span>
+        <p style="color:var(--film-ink);font-size:.95rem;line-height:1.6">
+          전문의 한 사람의 값은 그 사람의 값일 뿐, <b>기준</b>이 되지 못한다.
+          같은 영상을 두 명 이상이 재야 비교의 기준을 세울 수 있고,
+          더 중요하게는 <b>전문의끼리도 얼마나 다른지</b>를 알 수 있다.
+        </p>
+        <p style="font-size:.86rem">
+          그 '사람 사이의 차이'가 곧 AI 오차를 재는 잣대가 된다 —
+          전문의 두 명이 서로 3 mm 다르게 재는 항목에서 AI가 3 mm 벗어난 것은
+          다른 의미다. 관찰자간 일치도를 이 도구가 직접 계산하는 이유가 여기 있다.
+        </p>
+      </div>
+
+      <h3 style="margin-top:.6rem">기존 데스크톱 툴을 쓰지 않은 이유</h3>
+      <p>
+        저장소의 <code>picc_labeling_tool.py</code>는 이 일을 하지 못한다.
+        지원하는 라벨링 모드가 <code>Trunk Border</code>와
+        <code>Trachea Midline</code> 둘뿐이라 논문 공식이 쓰는 8개 계측이 아예 없고,
+        <b>소요시간을 재지 않으며</b>, 단일 사용자·로컬 파일 기반이라 두 사람의 계측을
+        나란히 둘 수 없다. 시간을 재지 않는다는 점 하나만으로도 가설 2를 세울 수 없다.
+      </p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th></th><th>데스크톱 <span class="mono">picc_labeling_tool.py</span></th><th>웹 <span class="mono">web_labeling/</span></th></tr>
+          </thead>
+          <tbody>
+            <tr><td>대상</td><td>trunk(회전 사각형), trachea(연결점)</td><td><b>PICC 8개 계측 전부</b></td></tr>
+            <tr><td>사용자</td><td>단일 사용자, 로컬 파일</td><td>로그인 · 관리자/계측자 역할 분리</td></tr>
+            <tr><td>계측 단위</td><td>영상 하나에 여러 라벨</td><td><b>(영상 × 항목) 문제 하나</b></td></tr>
+            <tr><td>점 개수</td><td>clavicle·2VBU는 4~5점</td><td><b>전부 두 점</b> (드래그 한 번)</td></tr>
+            <tr><td>소요시간</td><td>재지 않음</td><td><b>항목 단위로 기록</b></td></tr>
+            <tr><td>목적</td><td>학습 데이터</td><td><b>AI 대조군(계측값 + 시간)</b></td></tr>
+            <tr><td>산출물</td><td>annotations JSON</td><td>SQLite + XLSX · CSV · 학습용 JSON</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        다만 데스크톱 툴의 <b>사용 감각</b>은 그대로 옮겼다 — 이미지 강화 토글,
+        미계측 파일로 건너뛰기, 진행률 표시, 단축키, 미저장 경고, 재편집.
+        전문의가 낯선 도구와 씨름하면 그 시간이 소요시간에 섞여
+        <b>속도 비교를 오염시키기 때문</b>이다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────── 무엇 -->
+  <section id="what">
+    <div class="sec-head">
+      <span class="eyebrow">계측 대상</span>
+      <h2>무엇을 계측하나</h2>
+    </div>
+    <div class="sec-body wide">
+      <p style="max-width:68ch">
+        <b>모든 영상에서 8개 항목을 전부</b> 잰다. 업로드할 때 그룹을 나누지 않는다.
+        영상 한 장을 올리면 계측자 한 사람당 문제가 8개 늘어난다.
+      </p>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>키</th><th>표시명</th><th class="num">공식 계수</th><th>JSON 형식</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="key">right_clavicle</td><td>Rt. Clavicle</td><td class="num">−0.062</td><td class="key">points</td></tr>
+            <tr><td class="key">left_clavicle</td><td>Lt. Clavicle</td><td class="num">−0.062</td><td class="key">points</td></tr>
+            <tr><td class="key">right_hvd</td><td>Rt. HVD</td><td class="num">+0.720</td><td class="key">line</td></tr>
+            <tr><td class="key">left_hvd</td><td>Lt. HVD</td><td class="num">+0.720</td><td class="key">line</td></tr>
+            <tr><td class="key">right_tcd</td><td>Rt. TCD</td><td class="num">+0.761</td><td class="key">line</td></tr>
+            <tr><td class="key">left_tcd</td><td>Lt. TCD</td><td class="num">+0.761</td><td class="key">line</td></tr>
+            <tr><td class="key">second_ribs_width</td><td>2nd Ribs Width</td><td class="num">+0.255</td><td class="key">line</td></tr>
+            <tr><td class="key">two_vbu</td><td>Two VBUs</td><td class="num">+1.024</td><td class="key">points</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="film" style="max-width:68ch">
+        <span class="eyebrow">여덟 항목 모두 같은 방식으로 잰다</span>
+        <p style="color:var(--film-ink);font-size:.95rem;line-height:1.6">
+          <b>드래그 한 번 = 두 점.</b> 시작점에서 끝점까지 긋는다.
+          Rt.CL·Lt.CL·2VBUs도 예외가 아니다.
+        </p>
+        <p style="font-size:.86rem">
+          재는 방식이 항목마다 다르면 <b>소요시간을 서로 비교할 수 없다</b> —
+          점을 다섯 개 찍는 항목이 두 개 찍는 항목보다 오래 걸리는 건 당연하니,
+          그 차이가 해부학적 난이도인지 조작 횟수인지 구분되지 않는다.
+        </p>
+        <p style="font-size:.86rem">
+          길이는 두 점 사이의 직선거리다. 추론 코드와 같은 규칙이라
+          (<span class="mono">calculate_clavicle_length</span>는 keypoints[0]↔[4],
+          <span class="mono">calculate_two_vbu_length</span>는 유효 점의 첫↔끝)
+          사람 값과 모델 값을 그대로 빼서 비교할 수 있다.
+        </p>
+      </div>
+
+      <p style="max-width:68ch">
+        각 항목의 안내 그림은 구 수동 계산기(<code>old_calculator/graphic/</code>)가
+        입력 포커스에 따라 띄우던 그림을 그대로 재사용했다. 파일명의
+        <code>Rt_</code>/<code>Lt_</code>는 <b>접근 방향</b> 기준이라 해부학적 좌우와
+        반대인 경우가 있다 — <code>Rt_cCL.png</code>는 '우측 접근의 반대측 쇄골' =
+        <b>좌측 쇄골</b> 그림이라 <code>left_clavicle</code>에 붙였다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────── 화면 -->
+  <section id="screen">
+    <div class="sec-head">
+      <span class="eyebrow">계측 방식</span>
+      <h2>문제 하나 = 영상 하나 × 항목 하나</h2>
+    </div>
+    <div class="sec-body wide">
+      <p style="max-width:68ch">
+        영상 한 장을 띄워 놓고 8개를 몰아서 재지 않는다. <b>한 문제에 한 항목만</b> 잰다.
+        이 쪼개기가 소요시간을 깨끗하게 만든다.
+      </p>
+
+      <figure>
+        <svg viewBox="0 0 760 200" role="img" xmlns="http://www.w3.org/2000/svg"
+             aria-label="문제 출제 후 사진을 공개하는 순간 타이머가 시작되고, 드래그를 끝내 손을 뗀 순간 타이머가 멈춘다. 확인 팝업에서의 선택 시간은 측정에 포함되지 않는다.">
+          <defs>
+            <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <!-- 측정 구간 배경 -->
+          <rect x="196" y="40" width="252" height="52" rx="6"
+                fill="#a50034" opacity=".08"/>
+          <text x="322" y="30" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="11" font-weight="600" fill="#a50034">시간 측정 구간</text>
+
+          <!-- 단계 박스 -->
+          <rect x="0" y="48" width="180" height="36" rx="6" fill="none"
+                stroke="currentColor" stroke-width="1.2" opacity=".5"/>
+          <text x="90" y="71" text-anchor="middle" font-family="Freesentation, sans-serif"
+                font-size="12" fill="currentColor">문제 출제 (사진 없음)</text>
+
+          <line x1="186" y1="66" x2="192" y2="66" stroke="currentColor" stroke-width="1.4"/>
+
+          <rect x="200" y="48" width="112" height="36" rx="6" fill="none"
+                stroke="#a50034" stroke-width="1.8"/>
+          <text x="256" y="71" text-anchor="middle" font-family="Freesentation, sans-serif"
+                font-size="12" font-weight="600" fill="#a50034">사진 공개</text>
+
+          <line x1="318" y1="66" x2="330" y2="66" stroke="currentColor"
+                stroke-width="1.4" marker-end="url(#ah3)"/>
+
+          <rect x="336" y="48" width="108" height="36" rx="6" fill="none"
+                stroke="#a50034" stroke-width="1.8"/>
+          <text x="390" y="71" text-anchor="middle" font-family="Freesentation, sans-serif"
+                font-size="12" font-weight="600" fill="#a50034">드래그 · 손 뗌</text>
+
+          <line x1="450" y1="66" x2="462" y2="66" stroke="currentColor"
+                stroke-width="1.4" marker-end="url(#ah3)"/>
+
+          <rect x="468" y="42" width="150" height="48" rx="6" fill="none"
+                stroke="currentColor" stroke-width="1.2" opacity=".5"/>
+          <text x="543" y="62" text-anchor="middle" font-family="Freesentation, sans-serif"
+                font-size="12" fill="currentColor">확인 팝업</text>
+          <text x="543" y="79" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="10" fill="currentColor" opacity=".6">측정에 포함 안 됨</text>
+
+          <!-- t0 / t1 표시 -->
+          <line x1="256" y1="96" x2="256" y2="112" stroke="#a50034" stroke-width="1.4"/>
+          <text x="256" y="126" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="11" font-weight="600" fill="#a50034">t0</text>
+          <line x1="390" y1="96" x2="390" y2="112" stroke="#a50034" stroke-width="1.4"/>
+          <text x="390" y="126" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="11" font-weight="600" fill="#a50034">t1</text>
+          <line x1="256" y1="119" x2="390" y2="119" stroke="#a50034" stroke-width="1"/>
+          <text x="323" y="143" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="11" fill="#a50034">duration_ms = t1 − t0</text>
+
+          <!-- 팝업의 세 갈래 -->
+          <line x1="624" y1="66" x2="640" y2="66" stroke="currentColor"
+                stroke-width="1.2" marker-end="url(#ah3)"/>
+          <text x="648" y="52" font-family="Freesentation, sans-serif" font-size="11"
+                fill="currentColor">확정 → 다음 문제</text>
+          <text x="648" y="70" font-family="Freesentation, sans-serif" font-size="11"
+                fill="currentColor">재측정 → 대기 목록으로</text>
+          <text x="648" y="88" font-family="Freesentation, sans-serif" font-size="11"
+                fill="currentColor">종료 → 나중에 재개</text>
+
+          <line x1="0" y1="168" x2="760" y2="168" stroke="currentColor"
+                stroke-width="1" opacity=".12"/>
+          <text x="0" y="190" font-family="Freesentation, sans-serif" font-size="11"
+                fill="currentColor" opacity=".62">문제를 읽는 시간도, 확정을 고민하는 시간도 빠진다 — 남는 건 영상을 보고 두 점을 찍는 시간뿐이다.</text>
+        </svg>
+        <figcaption>
+          타이머는 사진이 화면에 나타난 프레임에서 시작해 드래그를 끝내 손을 뗀
+          프레임에서 멈춘다. 확인 팝업에서 무엇을 고르든 그 시간은 들어가지 않는다.
+        </figcaption>
+      </figure>
+
+      <div class="grid grid-2" style="max-width:none">
+        <div class="card">
+          <h3>출제는 완전 무작위</h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            미계측 (영상 × 항목) 쌍 전체에서 하나씩 뽑는다. 같은 영상의 8개를 연달아
+            내면 앞서 찍은 점을 기억한 채 다음 계측을 하게 되어(anchoring)
+            계측자 간 차이가 인위적으로 줄고, 소요시간도 두 번째부터 짧아진다.
+          </p>
+        </div>
+        <div class="card">
+          <h3>사진은 미리 받아 둔다</h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            공개 순간에 네트워크를 타면 그 지연이 소요시간에 섞인다. 문제 카드를
+            보여 주는 동안 이미지를 미리 받고, 다 받기 전까지 '사진 보기' 버튼을
+            잠가 둔다. 다음 문제의 이미지도 미리 받는다.
+          </p>
+        </div>
+        <div class="card">
+          <h3>재측정은 그 자리에서 하지 않는다</h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            잘못 쟀다고 판단하면 대기 목록으로 돌려보내고 <b>다음 문제로 넘어간다.</b>
+            방금 본 화면을 기억한 채 다시 재면 편향이 생기기 때문이다.
+            나중에 무작위 순서로 다시 출제된다.
+          </p>
+        </div>
+        <div class="card">
+          <h3>버린 시도도 남긴다</h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            재측정을 요청한 계측은 지우지 않고 <span class="mono">status='redo'</span>로
+            남는다. 집계에서만 빠진다 — 몇 번 만에 만족했는지가 그 자체로 자료다.
+          </p>
+        </div>
+      </div>
+
+      <div class="film" style="max-width:68ch">
+        <span class="eyebrow">조작</span>
+        <dl class="readout">
+          <dt>사진 공개</dt><dd>Space / Enter</dd>
+          <dt>계측</dt><dd>좌클릭 드래그</dd>
+          <dt>화면 이동</dt><dd>Shift + 드래그</dd>
+          <dt>창 조절 (WW / WC)</dt><dd>우클릭 드래그</dd>
+          <dt>샤프닝 3단계 (반경 2/5/9px)</dt><dd>Tab</dd>
+          <dt>확대 · 맞춤 · 강화</dt><dd>휠 · 0 · C</dd>
+          <dt>확정 / 재측정 / 종료</dt><dd>Enter / R / Esc</dd>
+        </dl>
+        <p style="font-size:.86rem">
+          창 조절은 방사선과 뷰어 관례를 따랐다 — 오른쪽으로 끌면 대비가 세지고,
+          위로 올리면 어두워진다. 8px 미만의 짧은 드래그는 오조작으로 보고 무시한다
+          (시간은 계속 흐른다). 확인 팝업은 항상 우측 하단에 뜬다.
+          우측 <b>완료 목록</b>에서 지난 계측을 다시 보거나 재측정을 요청할 수 있다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────── 시간 -->
+  <section id="time">
+    <div class="sec-head">
+      <span class="eyebrow">1차 평가변수</span>
+      <h2>시간 측정</h2>
+    </div>
+    <div class="sec-body">
+      <div class="callout" style="border-left-color:var(--accent); background:var(--accent-tint)">
+        <span class="eyebrow" style="color:var(--accent)">이것이 가설 2의 데이터다</span>
+        <p style="font-size:.93rem;color:var(--ink)">
+          여기서 재는 시간이 그대로 <b>속도 비교의 사람 쪽 숫자</b>가 된다.
+          부풀려지면 AI가 실제보다 빨라 보이고, 축소되면 논문이 약해진다.
+        </p>
+      </div>
+
+      <p>
+        측정 구간은 <b>사진이 화면에 나타난 프레임부터 드래그를 끝내 손을 뗀 프레임까지</b>다.
+        <code>performance.now()</code>로 잰다. <code>t0</code>는 그려진 프레임에서 찍되
+        폴백을 먼저 박아 둔다 — 백그라운드 탭처럼
+        <code>requestAnimationFrame</code>이 늦게 뜨는 상황에서 소요시간이 통째로
+        사라지면 안 되기 때문이다.
+      </p>
+
+      <div class="film">
+        <span class="eyebrow">무조작 잠금</span>
+        <dl class="readout">
+          <dt>조작이 없으면 잠금까지</dt><dd>60<span class="unit">초</span></dd>
+          <dt>1단계 안내 후 2단계 전환까지</dt><dd>10<span class="unit">초</span></dd>
+          <dt>소요시간 상한(이상값 클램프)</dt><dd>24<span class="unit">시간</span></dd>
+        </dl>
+        <p style="font-size:.86rem">
+          잠금이 풀리면 <b>진행 중이던 문제는 버리고 새 문제부터</b> 시작한다.
+          자리를 비운 채 흘러간 시간이 그 문제의 소요시간에 남으면 안 되기 때문이다.
+          잠금 시간은 설정에서 바꿀 수 있다.
+        </p>
+      </div>
+
+      <div class="callout">
+        <span class="eyebrow">비교할 때 맞춰야 할 것</span>
+        <p style="font-size:.93rem;color:var(--ink)">
+          사람 쪽 숫자에는 영상을 보고 두 점을 찍는 시간이 들어 있다.
+          AI 쪽도 <b>같은 구간</b>(DICOM 로드 → 검출 → 계측값 산출)으로 재야
+          공정한 비교가 된다. 모델 가중치 로딩처럼 1회성 비용은 빼거나 따로 보고한다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────── 불일치 -->
+  <section id="agree">
+    <div class="sec-head">
+      <span class="eyebrow">핵심 규칙</span>
+      <h2>계측자 간 불일치 판정</h2>
+    </div>
+    <div class="sec-body wide">
+      <div class="callout" style="max-width:68ch">
+        <span class="eyebrow">먼저 분명히</span>
+        <p style="font-size:.93rem;color:var(--ink)">
+          <b>이 도구는 확정값(Ground Truth)을 만들지 않는다.</b>
+          전문의들의 계측을 하나의 값으로 합의시키지 않는다는 뜻이다.
+          2인 이상이 같은 (영상 × 항목)을 각자 독립적으로 재고,
+          <b>그 계측들이 그대로</b> 분석 대상이 된다.
+          어디에도 '확정' 단계나 관리자 중재 화면은 없다.
+        </p>
+      </div>
+
+      <p style="max-width:68ch">
+        그렇다면 아래 판정은 왜 있는가 — <b>사람의 변동폭 자체를 기록하기 위해서다.</b>
+        AI 오차가 크다 작다를 말하려면 사람끼리의 차이가 얼마인지부터 알아야 한다.
+        전문의 둘이 3&nbsp;mm 다르게 재는 항목에서 AI가 3&nbsp;mm 벗어난 것은
+        다른 의미다. 논문의 interobserver agreement 수치가 여기서 나온다.
+      </p>
+      <p style="max-width:68ch">
+        같은 (영상, 항목)에 대해 유효한 계측값을 모아, 값의 폭이 관리자가 정한
+        <b>전역 허용범위(mm)</b>를 넘으면 불일치로 <b>표시</b>한다.
+        모든 항목에 같은 값이 적용된다.
+      </p>
+
+      <figure>
+        <svg viewBox="0 0 720 250" role="img" xmlns="http://www.w3.org/2000/svg"
+             aria-label="두 계측자의 값은 어느 경우에도 각각 그대로 보존되며, 값의 폭이 허용범위를 넘는지 여부는 일치 또는 불일치 표시만 바꾼다">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <!-- 사례 A : 허용범위 안 -->
+          <text x="0" y="14" font-family="IBM Plex Mono, monospace" font-size="11"
+                font-weight="600" fill="currentColor" opacity=".55">사례 A · 허용범위 안</text>
+
+          <rect x="176" y="30" width="104" height="34" rx="4"
+                fill="currentColor" opacity=".08"/>
+          <line x1="60" y1="47" x2="440" y2="47" stroke="currentColor"
+                stroke-width="1" opacity=".28"/>
+          <circle cx="196" cy="47" r="5" fill="currentColor"/>
+          <circle cx="262" cy="47" r="5" fill="currentColor"/>
+          <text x="196" y="30" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="11" fill="currentColor">140.0</text>
+          <text x="262" y="30" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="11" fill="currentColor">141.4</text>
+          <text x="229" y="80" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="11" fill="currentColor" opacity=".6">폭 1.4 mm</text>
+          <line x1="300" y1="47" x2="392" y2="47" stroke="currentColor"
+                stroke-width="1.5" marker-end="url(#ah)"/>
+          <text x="346" y="38" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="10" fill="currentColor" opacity=".5">표시만</text>
+          <rect x="400" y="32" width="150" height="30" rx="6"
+                fill="none" stroke="#146b45" stroke-width="1.5"/>
+          <text x="475" y="52" text-anchor="middle" font-family="Freesentation, sans-serif"
+                font-size="12" fill="#146b45" font-weight="600">'일치'로 표시</text>
+          <text x="566" y="52" font-family="Freesentation, sans-serif"
+                font-size="11.5" fill="currentColor" opacity=".72">두 값 다 보존</text>
+
+          <!-- 허용범위 눈금 -->
+          <line x1="176" y1="104" x2="280" y2="104" stroke="currentColor"
+                stroke-width="1" opacity=".45"/>
+          <line x1="176" y1="99" x2="176" y2="109" stroke="currentColor" stroke-width="1" opacity=".45"/>
+          <line x1="280" y1="99" x2="280" y2="109" stroke="currentColor" stroke-width="1" opacity=".45"/>
+          <text x="228" y="122" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="10.5" fill="currentColor" opacity=".55">허용범위 5 mm</text>
+
+          <line x1="0" y1="144" x2="720" y2="144" stroke="currentColor"
+                stroke-width="1" opacity=".14"/>
+
+          <!-- 사례 B : 허용범위 초과 -->
+          <text x="0" y="170" font-family="IBM Plex Mono, monospace" font-size="11"
+                font-weight="600" fill="currentColor" opacity=".55">사례 B · 허용범위 초과</text>
+
+          <rect x="176" y="186" width="104" height="34" rx="4"
+                fill="currentColor" opacity=".08"/>
+          <line x1="60" y1="203" x2="440" y2="203" stroke="currentColor"
+                stroke-width="1" opacity=".28"/>
+          <circle cx="196" cy="203" r="5" fill="#a8480a"/>
+          <circle cx="392" cy="203" r="5" fill="#a8480a"/>
+          <text x="196" y="186" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="11" fill="currentColor">42.0</text>
+          <text x="392" y="186" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="11" fill="currentColor">70.0</text>
+          <line x1="196" y1="228" x2="392" y2="228" stroke="#a8480a"
+                stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="294" y="244" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="11" fill="#a8480a" font-weight="600">폭 28.0 mm</text>
+          <line x1="412" y1="203" x2="392" y2="203" stroke="currentColor"
+                stroke-width="1.5" marker-start="url(#ah)"/>
+          <rect x="416" y="188" width="150" height="30" rx="6"
+                fill="none" stroke="#a8480a" stroke-width="1.5"/>
+          <text x="491" y="208" text-anchor="middle" font-family="Freesentation, sans-serif"
+                font-size="12" fill="#a8480a" font-weight="600">'불일치'로 표시</text>
+          <text x="578" y="208" font-family="Freesentation, sans-serif"
+                font-size="11.5" fill="currentColor" opacity=".72">두 값 다 보존</text>
+        </svg>
+        <figcaption>
+          허용범위는 값의 폭(최댓값 − 최솟값)에 대한 기준이다.
+          <b>어느 쪽이든 계측값은 둘 다 그대로 남는다</b> — 판정이 바꾸는 것은
+          화면과 내보내기의 <code>agreement_kind</code> 표시뿐이다.
+        </figcaption>
+      </figure>
+
+      <div class="grid grid-2" style="max-width:none">
+        <div class="card">
+          <h3><span class="chip chip-ok">일치</span></h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            값의 폭이 허용범위 안. 두 계측 모두 그대로 남고 표시만 '일치'가 된다.
+          </p>
+        </div>
+        <div class="card">
+          <h3><span class="chip chip-flag">불일치</span></h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            값의 폭이 허용범위 초과. 역시 두 계측 모두 그대로 남는다.
+            불일치 목록에서 <b>확인만</b> 하면 된다 — 고르거나 확정하지 않는다.
+          </p>
+        </div>
+        <div class="card">
+          <h3><span class="chip chip-wait">일부만 계측</span></h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            제출한 사람이 2명 미만이라 비교할 수 없는 상태. 판정하지 않는다.
+          </p>
+        </div>
+        <div class="card">
+          <h3><span class="chip chip-none">계측 없음</span></h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            아직 아무도 제출하지 않은 영상.
+          </p>
+        </div>
+      </div>
+
+      <p style="max-width:68ch">
+        허용범위를 바꾸면 전체 영상이 즉시 재분류된다. <b>저장된 계측은 그대로다</b> —
+        판정은 저장하지 않는 파생값이라 언제든 기준을 바꿔 볼 수 있다.
+      </p>
+      <p style="max-width:68ch">
+        관리자 화면의 <b>「2인 이상이 잰 (영상 × 항목)」</b>이 실질 진척도다.
+        AI와 맞대어 볼 수 있는 항목이 몇 개인가를 뜻한다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────── mm -->
+  <section id="mm">
+    <div class="sec-head">
+      <span class="eyebrow">주의</span>
+      <h2>mm 환산의 근거</h2>
+    </div>
+    <div class="sec-body wide">
+      <p style="max-width:68ch">
+        정확도 비교는 mm 단위로 이뤄지므로, 픽셀 스페이싱이 틀리면
+        <b>사람도 AI도 아닌 단위 환산이 오차를 만든다.</b> 가설 1이 여기서 무너진다.
+        좌표는 <b>DICOM 원본 픽셀</b>로 저장하고 mm는 그 좌표에서 계산한다 —
+        화면 확대율이나 렌더 해상도가 값에 끼어들 여지를 없앤 것이다.
+      </p>
+
+      <figure>
+        <svg viewBox="0 0 720 168" role="img" xmlns="http://www.w3.org/2000/svg"
+             aria-label="캔버스 좌표를 DICOM 원본 픽셀로 되돌린 뒤 픽셀 스페이싱을 곱해 mm를 구한다. 저장되는 값은 원본 좌표와 mm 두 가지다.">
+          <defs>
+            <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <rect x="0" y="28" width="150" height="46" rx="6" fill="none"
+                stroke="currentColor" stroke-width="1.2" opacity=".55"/>
+          <text x="75" y="48" text-anchor="middle" font-family="Freesentation, sans-serif"
+                font-size="12" fill="currentColor">캔버스 px</text>
+          <text x="75" y="64" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="10" fill="currentColor" opacity=".6">마우스 좌표</text>
+
+          <line x1="156" y1="51" x2="212" y2="51" stroke="currentColor"
+                stroke-width="1.4" marker-end="url(#ah2)"/>
+          <text x="184" y="42" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="10" fill="currentColor" opacity=".6">÷ 확대율</text>
+
+          <rect x="218" y="28" width="150" height="46" rx="6" fill="none"
+                stroke="currentColor" stroke-width="1.2" opacity=".55"/>
+          <text x="293" y="48" text-anchor="middle" font-family="Freesentation, sans-serif"
+                font-size="12" fill="currentColor">PNG px</text>
+          <text x="293" y="64" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="10" fill="currentColor" opacity=".6">긴 변 2048</text>
+
+          <line x1="374" y1="51" x2="430" y2="51" stroke="currentColor"
+                stroke-width="1.4" marker-end="url(#ah2)"/>
+          <text x="402" y="42" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="10" fill="currentColor" opacity=".6">÷ 렌더배율</text>
+
+          <rect x="436" y="24" width="176" height="54" rx="6" fill="none"
+                stroke="#a50034" stroke-width="1.8"/>
+          <text x="524" y="46" text-anchor="middle" font-family="Freesentation, sans-serif"
+                font-size="12" font-weight="600" fill="#a50034">DICOM 원본 px</text>
+          <text x="524" y="63" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="10" fill="#a50034" opacity=".85">← 저장되는 좌표</text>
+
+          <line x1="524" y1="84" x2="524" y2="112" stroke="currentColor"
+                stroke-width="1.4" marker-end="url(#ah2)"/>
+          <text x="536" y="102" font-family="IBM Plex Mono, monospace"
+                font-size="10" fill="currentColor" opacity=".6">× 픽셀 스페이싱</text>
+
+          <rect x="436" y="118" width="176" height="34" rx="6" fill="none"
+                stroke="#146b45" stroke-width="1.5"/>
+          <text x="524" y="140" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                font-size="12" font-weight="600" fill="#146b45">길이 (mm)</text>
+
+          <text x="0" y="128" font-family="Freesentation, sans-serif" font-size="11"
+                fill="currentColor" opacity=".6">화면 확대율과 렌더 해상도는</text>
+          <text x="0" y="145" font-family="Freesentation, sans-serif" font-size="11"
+                fill="currentColor" opacity=".6">저장 전에 전부 상쇄된다</text>
+        </svg>
+        <figcaption>
+          점을 찍는 순간 캔버스 좌표를 원본 픽셀로 되돌려 저장한다. 그래서 나중에 렌더
+          해상도를 바꾸거나 다른 화면에서 열어도 값이 달라지지 않는다.
+        </figcaption>
+      </figure>
+
+      <div class="callout" style="max-width:68ch">
+        <span class="eyebrow">Test set 전수 조사 결과</span>
+        <p style="font-size:.93rem;color:var(--ink)">
+          <code>추가 data (20260112 이후 시술분)</code> 519장 중
+          <b>약 23%에 <code>PixelSpacing</code> 태그가 없다.</b>
+          대신 <code>ImagerPixelSpacing</code>은 <b>100% 존재</b>한다.
+        </p>
+        <div class="table-scroll" style="margin-top:4px">
+          <table>
+            <thead><tr><th>폴더</th><th class="num">n</th><th class="num">PixelSpacing 없음</th><th class="num">ImagerPixelSpacing 없음</th></tr></thead>
+            <tbody>
+              <tr><td>Lt</td><td class="num">390</td><td class="num"><b>97 (24.9%)</b></td><td class="num">0</td></tr>
+              <tr><td>Rt</td><td class="num">129</td><td class="num"><b>26 (20.2%)</b></td><td class="num">0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:.93rem;color:var(--ink)">
+          실제 값도 0.14 / 0.1988 / 0.194222 / 0.187594 … 로 균일하지 않다.
+          이 도구는 <code>PixelSpacing</code> → <code>ImagerPixelSpacing</code> → 수동입력
+          순으로 읽어 519장 전부 정확한 mm를 얻는다.
+        </p>
+      </div>
+
+      <div class="film" style="max-width:68ch">
+        <span class="eyebrow">모델 값과 비교하기 전에</span>
+        <p style="color:var(--film-ink);font-size:.95rem;line-height:1.6">
+          기존 추론 코드는 <span class="mono">PixelSpacing</span>만 읽고, 없으면
+          <span class="mono">0.2 mm</span>(CLI) 또는 <span class="mono">0.831 mm</span>(GUI)
+          고정값으로 떨어진다. GUI 경로는 환산조차 하지 않는다.
+        </p>
+        <p style="font-size:.86rem">
+          즉 test set의 약 23%가 잘못된 mm를 받는다. <b>이 상태로 비교하면
+          모델이 실제보다 부정확해 보인다</b> — 오차의 상당 부분이 모델 성능이 아니라
+          단위 환산에서 나오기 때문이다. AI 예측값을 뽑기 전에
+          <b>추론 쪽 폴백을 먼저 고쳐야 한다.</b>
+        </p>
+      </div>
+
+      <p style="max-width:68ch">
+        두 태그가 모두 없는 영상은 등재는 되지만 mm 계측이 불가능하다.
+        <b>설정</b> 화면에 목록이 뜨고, 값을 넣으면 그 영상의 기존 계측이 전부 다시 계산된다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────── 운영 -->
+  <section id="run">
+    <div class="sec-head">
+      <span class="eyebrow">절차</span>
+      <h2>운영 순서</h2>
+    </div>
+    <div class="sec-body">
+      <ol class="flow">
+        <li><div class="step-body">
+          <h3>계정 발급</h3>
+          <p>전문의를 <b>계측자</b> 역할로 만든다. 임시 비밀번호는 화면에 한 번만 표시되므로
+             그때 전달한다. 첫 로그인 시 변경이 강제된다.
+             <b>관리자는 계측에 참여할 수 없다</b> — 일치도 집계가 오염되지 않게 역할을 분리했다.</p>
+        </div></li>
+        <li><div class="step-body">
+          <h3>허용범위 설정</h3>
+          <p>불일치 판정 기준(mm)을 정한다. 기본 5 mm. 나중에 언제든 바꿀 수 있고 즉시 재분류된다.</p>
+        </div></li>
+        <li><div class="step-body">
+          <h3>영상 업로드</h3>
+          <p>DICOM을 여러 개 한꺼번에 올린다(.zip 묶음도 가능). 파일별 진행 상태가
+             목록으로 표시된다. 같은 파일을 두 번 올리면 내용 해시로 걸러
+             <b>중복</b>으로 표시한다. 올린 영상은 자동으로 <b>8개 항목 전부</b>의
+             대상이 되며, 영상 1장 = 계측자 1인당 문제 8개다.</p>
+        </div></li>
+        <li><div class="step-body">
+          <h3>계측</h3>
+          <p>전문의가 각자 로그인해 문제를 푼다. 미계측 (영상 × 항목) 쌍이 무작위로
+             출제되고, 전량을 마치면 완료 화면이 뜬다.
+             중간에 '확정 후 평가 종료'로 빠져나가도 남은 문제부터 이어진다.</p>
+        </div></li>
+        <li><div class="step-body">
+          <h3>불일치 확인</h3>
+          <p>매트릭스에서 허용범위를 넘은 항목을 확인한다. <b>읽기 전용이다</b> —
+             값을 고르거나 확정하지 않는다. 불일치만 모아 보는 화면이 따로 있다.</p>
+        </div></li>
+        <li><div class="step-body">
+          <h3>내보내기</h3>
+          <p>분석용 파일을 받는다. 계측자 각자의 값이 합쳐지지 않은 채 그대로 나간다.</p>
+        </div></li>
+        <li><div class="step-body">
+          <h3>AI 값과 대조</h3>
+          <p>같은 test set에 모델을 돌려 예측값과 추론 시간을 뽑고,
+             <span class="mono">measurements_long.csv</span>와 영상 ID로 붙여 비교한다.
+             <b>추론 쪽 픽셀 스페이싱 폴백을 고친 뒤에</b> 돌려야 한다(→ mm 환산 절).</p>
+        </div></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────── 내보내기 -->
+  <section id="export">
+    <div class="sec-head">
+      <span class="eyebrow">산출물</span>
+      <h2>내보내기</h2>
+    </div>
+    <div class="sec-body wide">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>파일</th><th>용도</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="key">measurements_wide.xlsx</td>
+              <td>행 = 영상. 계측자별 8개 값·<b>항목별 소요시간</b>·계측자 간 차이를 옆으로 펼침. 사람이 훑어보며 검토할 때</td>
+            </tr>
+            <tr>
+              <td class="key">measurements_long.csv</td>
+              <td>행 = (영상 × 계측자 × 항목)의 tidy 포맷. R·SPSS에 그대로 넣어 ICC·Bland-Altman 산출</td>
+            </tr>
+            <tr>
+              <td class="key">disagreements.xlsx</td>
+              <td>허용범위 초과 항목만, 차이 큰 순</td>
+            </tr>
+            <tr>
+              <td class="key">picc_data_bundle.zip</td>
+              <td>위 3종 + <b>계측자별</b> 좌표를 학습용 어노테이션 JSON으로</td>
+            </tr>
+            <tr>
+              <td class="key">picc_full_bundle.zip</td>
+              <td>위 전부 + 원본 DICOM + 렌더 PNG. 용량이 크며 스트리밍으로 내려간다</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="max-width:68ch">
+        어노테이션 JSON은 <b>계측자별로 한 벌씩</b> 나온다 —
+        <code>annotations/&lt;계측자&gt;/&lt;항목&gt;/&lt;파일명&gt;_&lt;항목&gt;.json</code>.
+        합쳐진 '정답 한 벌'이 아니다. 포맷과 좌표계(DICOM 원본 픽셀)는 기존 학습
+        데이터와 같아서, 한 계측자분을 골라
+        <code>data/annotations/&lt;항목&gt;/</code>에 그대로 넣으면 학습에 되먹일 수 있다.
+        clavicle과 two_vbu는 <code>points</code>, hvd·tcd·2nd ribs는 <code>line</code> 키.
+      </p>
+      <p style="max-width:68ch">
+        고급 통계(ICC, Bland-Altman, 비열등성 검정)는 웹에 넣지 않았다.
+        long CSV를 R이나 SPSS로 가져가는 편이 논문 작성에 낫다 —
+        필요한 검정과 표기가 저널마다 다르기 때문이다.
+      </p>
+
+      <div class="film" style="max-width:68ch">
+        <span class="eyebrow">두 가설이 어느 열에서 나오는가</span>
+        <dl class="readout">
+          <dt>가설 1 · 정확도 (비열등성)</dt><dd class="mono">value_mm</dd>
+          <dt>사람끼리의 변동폭 (판단 잣대)</dt><dd class="mono">spread_mm</dd>
+          <dt>가설 2 · 속도 (우월성)</dt><dd class="mono">duration_ms</dd>
+          <dt>AI와 맞댈 대상</dt><dd class="mono">gt_value_mm</dd>
+          <dt>유효/버린 시도 구분</dt><dd class="mono">status</dd>
+        </dl>
+        <p style="font-size:.86rem">
+          전부 <span class="mono">measurements_long.csv</span> 한 파일에 들어 있다.
+          영상·계측자·항목 단위로 이미 풀려 있어 그대로 통계 패키지에 넣을 수 있다.
+          <span class="mono">status='done'</span>만 유효하며
+          <span class="mono">'redo'</span>는 재측정을 요청해 버린 시도다 —
+          속도 분석에서 빼야 한다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────── 초기화 -->
+  <section id="reset">
+    <div class="sec-head">
+      <span class="eyebrow">되돌릴 수 없음</span>
+      <h2>테스트 데이터 초기화</h2>
+    </div>
+    <div class="sec-body wide">
+      <p style="max-width:68ch">
+        충분히 시험해 본 뒤 실전 데이터로 넘어갈 때 <b>관리자 › 초기화</b>에서 지운다.
+        범위는 좁은 것부터 셋이고, 넓은 범위는 좁은 범위를 포함한다.
+      </p>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>범위</th><th>지우는 것</th><th>남는 것</th><th>확인 문구</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>계측 기록만</td>
+              <td>계측값</td>
+              <td>영상 · 계정 · 설정</td>
+              <td class="key">계측 기록 삭제</td>
+            </tr>
+            <tr>
+              <td>영상까지</td>
+              <td>위 + 영상(DICOM · PNG 파일 포함)</td>
+              <td>계정 · 설정</td>
+              <td class="key">영상까지 삭제</td>
+            </tr>
+            <tr>
+              <td>전체</td>
+              <td>위 + 계측자 계정 · 설정</td>
+              <td>관리자 계정</td>
+              <td class="key">전체 삭제</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="film" style="max-width:68ch">
+        <span class="eyebrow">안전장치 두 겹</span>
+        <p style="color:var(--film-ink);font-size:.95rem;line-height:1.6">
+          <b>본인 계정 비밀번호</b>와 <b>범위별 확인 문구</b>를 둘 다 맞게 입력해야 실행된다.
+          하나라도 틀리면 아무것도 지우지 않는다.
+        </p>
+        <p style="font-size:.86rem">
+          비밀번호를 다시 받는 이유는 자리를 비운 사이 남이 누르는 것을 막기 위해서고,
+          확인 문구를 타이핑하게 하는 이유는 <b>무엇을 지우는지 읽게 만들기</b> 위해서다.
+          계측자 계정으로는 이 화면에 들어올 수조차 없다.
+        </p>
+      </div>
+
+      <div class="callout" style="max-width:68ch">
+        <span class="eyebrow">지워지지 않는 것</span>
+        <p style="font-size:.93rem;color:var(--ink)">
+          <b>관리자 계정은 어떤 범위에서도 남는다.</b> 지우면 아무도 로그인할 수 없기 때문이다.
+          데이터베이스 파일까지 비우려면 서버를 멈추고
+          <code>data/app.db</code> · <code>data/dicom</code> · <code>data/png</code> 를
+          직접 지운다 — 다음 기동 때 <code>.env</code>의 초기 관리자 계정이 다시 만들어진다.
+        </p>
+      </div>
+
+      <p style="max-width:68ch">
+        실행 전에 <a href="#export">내보내기</a>로 받아 두면, 테스트 중에 쌓인 값도
+        나중에 참고할 수 있다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────── 운영 -->
+  <section id="ops">
+    <div class="sec-head">
+      <span class="eyebrow">설치와 운영</span>
+      <h2>배포와 운영</h2>
+    </div>
+    <div class="sec-body">
+      <pre><span class="cm"># 1) 가상환경 + 의존성 (최초 1회)</span>
+powershell -ExecutionPolicy Bypass -File scripts\setup_venv.ps1
+
+<span class="cm"># 2) 서버 실행</span>
+powershell -ExecutionPolicy Bypass -File scripts\start_server.ps1
+
+<span class="cm"># 3) 부팅 시 자동 기동 (관리자 권한 PowerShell)</span>
+powershell -ExecutionPolicy Bypass -File scripts\install_autostart.ps1
+
+<span class="cm"># 스모크 테스트 (서버를 띄운 상태에서)</span>
+.venv\Scripts\python.exe tests\e2e_smoke.py</pre>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>재부팅에도 살아남기</h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            Task Scheduler에 <b>부팅 시</b>(로그온이 아니라) 트리거와 <b>5분마다</b>
+            상태 확인 트리거를 함께 건다. 런처는 멱등이라 서버가 살아 있으면 아무것도
+            하지 않고, 죽어 있을 때만 되살린다. 로그인하지 않아도 서버가 뜬다.
+          </p>
+        </div>
+        <div class="card">
+          <h3>JPEG2000 디코더</h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            Test set의 <b>94%가 JPEG2000</b> 압축이다.
+            <code>pylibjpeg-openjpeg</code>가 없으면 업로드가 전부 실패한다.
+            현황·업로드 화면에 디코더 설치 상태가 표시되니 배포 후 한 번 확인할 것.
+          </p>
+        </div>
+        <div class="card">
+          <h3>백업</h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            <code>data/</code> 전체(<code>app.db</code> + <code>dicom/</code> +
+            <code>png/</code>)와 <code>.env</code>. 계측 기록이 있는 계정은 삭제되지 않는다 —
+            연구 데이터가 사라지지 않도록 <b>비활성화</b>를 쓴다.
+          </p>
+        </div>
+        <div class="card">
+          <h3>venv를 나눈 이유</h3>
+          <p style="color:var(--ink-2);font-size:.92rem">
+            웹 툴은 numpy 2.x + pydicom 3.x를 쓴다(<code>pylibjpeg-openjpeg</code>가
+            numpy ≥ 2를 요구). 추론 코드는 numpy 1.26 계열이라 환경을 공유하지 않는다.
+          </p>
+        </div>
+      </div>
+
+      <div class="film">
+        <span class="eyebrow">문제 해결</span>
+        <dl class="readout">
+          <dt>업로드가 전부 실패</dt><dd>디코더 상태 확인</dd>
+          <dt>mm 값이 비어 있음</dt><dd>설정 › 스페이싱</dd>
+          <dt>다른 PC에서 접속 안 됨</dt><dd>방화벽 TCP 1531</dd>
+          <dt>재부팅 후 서버 없음</dt><dd>data/logs/launcher.log</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>AI-PICC · 웹 계측 라벨링 툴 운영 문서 · 2026-08-26</p>
+    <p>전체 소스와 상세 설명은 <span class="mono">web_labeling/README.md</span>,
+       프로젝트 전반은 루트 <span class="mono">CLAUDE.md §13</span>.</p>
+  </footer>
+
+</main>

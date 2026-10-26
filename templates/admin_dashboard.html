@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}현황 · {{ APP_TITLE }}{% endblock %}
+{% block main_class %}shell-wide{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <h1>현황</h1>
+    <p class="lead">
+      <b>실제 계측 pool 기준</b> · 허용범위 {{ tolerance_mm }} mm · {{ generated_at }}
+    </p>
+  </div>
+  <div><a class="btn btn-primary" href="/admin/upload">영상 업로드</a></div>
+</div>
+
+{% set missing_decoder = decoders.values() | reject | list %}
+{% if missing_decoder %}
+<p class="notice">
+  DICOM 디코더가 일부 없습니다 —
+  {% for name, ok in decoders.items() %}{% if not ok %}<b>{{ name }}</b>{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}.
+  Test set의 94%가 JPEG2000이므로 <code>pylibjpeg-openjpeg</code>가 없으면 업로드가 실패합니다.
+  <code>scripts\setup_venv.ps1</code>을 다시 실행하세요.
+</p>
+{% endif %}
+
+{% if n_no_spacing %}
+<p class="error">
+  픽셀 스페이싱을 읽지 못한 영상이 <b>{{ n_no_spacing }}건</b> 있습니다.
+  이 영상들은 mm 계측이 불가능합니다 →
+  <a href="/admin/settings">설정에서 수동 입력</a>
+</p>
+{% endif %}
+
+{% if n_practice_images %}
+<p class="notice" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap">
+  <span class="chip">연습</span>
+  <span>
+    연습 pool에 영상 <b>{{ n_practice_images }}장</b>,
+    계측 <b>{{ n_practice_measurements }}건</b>이 있습니다.
+    <b>아래 숫자에는 포함되지 않으며</b> 내보내기·불일치 집계에도 들어가지 않습니다.
+  </span>
+  <a class="linkbtn" href="/admin/upload">업로드 화면에서 확인</a>
+</p>
+{% endif %}
+
+<div class="grid grid-4" style="margin-bottom:1rem">
+  <div class="stat">
+    <div class="stat-value">{{ n_images }}</div>
+    <div class="stat-label">실제 계측 영상</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">{{ n_questions }}</div>
+    <div class="stat-label">계측자 1인당 문제 수</div>
+  </div>
+  <div class="stat stat-ok">
+    <div class="stat-value">{{ counts.agree }}</div>
+    <div class="stat-label">8개 전부 일치한 영상</div>
+  </div>
+  <div class="stat stat-bad">
+    <div class="stat-value">{{ counts.variable_mismatches }}</div>
+    <div class="stat-label">불일치 항목</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>계측자별 진행</h2>
+  {% if not per_reviewer %}
+    <p class="muted small">활성 계측자 계정이 없습니다. <a href="/admin/users">사용자 관리</a></p>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>계측자</th><th class="num">완료</th>
+        <th class="num">항목당 중앙값</th><th class="num">재측정 요청</th>
+        <th style="width:32%">진행률</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in per_reviewer %}
+      <tr>
+        <td>{{ r.name }} <span class="muted small">{{ r.username }}</span></td>
+        <td class="num">{{ r.done }} / {{ r.total }}</td>
+        <td class="num">
+          {% if r.median_ms %}{{ (r.median_ms / 1000)|round(1) }}s{% else %}—{% endif %}
+        </td>
+        <td class="num">{{ r.redo }}</td>
+        <td>
+          <div class="bar"><div class="bar-fill{% if r.pct >= 100 %} ok{% endif %}"
+               style="width: {{ r.pct }}%"></div></div>
+          <span class="small muted">{{ r.pct }}%</span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="field-hint" style="margin-top:0.6rem">
+    분모는 <b>영상 {{ n_images }}장 × 항목 {{ N_VARIABLES }}개</b>입니다.
+    '항목당 중앙값'이 가설 2(속도)의 사람 쪽 숫자입니다 —
+    사진이 뜬 순간부터 마지막 drop까지만 잰 값입니다.
+  </p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>항목별 진행</h2>
+  {% if not per_variable or not n_images %}
+    <p class="muted small">등재된 영상이 없습니다.</p>
+  {% else %}
+  <table>
+    <thead>
+      <tr><th>계측 항목</th><th class="num">완료</th><th style="width:44%">진행률</th></tr>
+    </thead>
+    <tbody>
+      {% for v in per_variable %}
+      <tr>
+        <td>{{ v.display }} <span class="mono small muted">{{ v.key }}</span></td>
+        <td class="num">{{ v.done }} / {{ v.target }}</td>
+        <td>
+          <div class="bar"><div class="bar-fill{% if v.pct >= 100 %} ok{% endif %}"
+               style="width: {{ v.pct }}%"></div></div>
+          <span class="small muted">{{ v.pct }}%</span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>판정 요약</h2>
+  <div class="legend">
+    <span><span class="swatch" style="background:#e8f5e9"></span> 전부 일치 {{ counts.agree }}</span>
+    <span><span class="swatch" style="background:#fce4e4"></span> 불일치 포함 {{ counts.mismatch }}</span>
+    <span><span class="swatch" style="background:#e3f2fd"></span> 일부만 계측 {{ counts.partial }}</span>
+    <span><span class="swatch" style="background:#f5f5f4"></span> 계측 없음 {{ counts.empty }}</span>
+  </div>
+  <p class="small muted" style="margin:0">
+    허용범위를 초과한 <b>항목 단위</b> 불일치는 총 {{ counts.variable_mismatches }}건입니다.
+    <a href="/admin/disagreements">불일치 목록 보기</a>
+  </p>
+</div>
+
+{% if no_spacing %}
+<div class="card">
+  <h2>픽셀 스페이싱 미상 영상 {{ n_no_spacing }}건 {% if n_no_spacing > 50 %}(상위 50건){% endif %}</h2>
+  <table>
+    <thead><tr><th>ID</th><th>파일명</th><th>크기</th><th>수동 입력</th></tr></thead>
+    <tbody>
+      {% for im in no_spacing %}
+      <tr>
+        <td class="mono">#{{ im.id }}</td>
+        <td class="mono small">{{ im.original_filename }}</td>
+        <td class="small">{{ im.orig_w }}×{{ im.orig_h }}</td>
+        <td>
+          <form method="post" action="/admin/image/{{ im.id }}/spacing" class="row">
+            <input type="hidden" name="redirect_to" value="/admin" />
+            <input type="text" name="pixel_spacing_mm" placeholder="0.14"
+                   style="width:100px" required />
+            <button class="btn-sm" type="submit">적용</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

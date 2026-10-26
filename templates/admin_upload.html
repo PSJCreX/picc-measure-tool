@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}업로드 · {{ APP_TITLE }}{% endblock %}
+{% block main_class %}shell{% endblock %}
+{% block content %}
+
+<div class="page-head"><h1>영상 업로드</h1></div>
+<p class="lead">
+  올린 영상은 모두 <b>8개 항목 전부</b>의 계측 대상이 됩니다.
+  계측자에게는 (영상 × 항목) 조합이 문제 하나씩 무작위로 출제됩니다.
+</p>
+
+<div class="card">
+  <h2>어느 pool에 넣을까요?</h2>
+  <div class="pool-pick">
+    <label class="pool-opt">
+      <input type="radio" name="pool" value="{{ POOL_REAL }}" checked />
+      <span class="pool-opt-body">
+        <b>실제 계측</b>
+        <span class="chip">{{ pool_counts[POOL_REAL] }}장</span>
+        <span class="small muted">
+          논문에 쓰이는 본 계측 대상입니다. 내보내기·불일치 집계에 모두 포함됩니다.
+        </span>
+      </span>
+    </label>
+    <label class="pool-opt">
+      <input type="radio" name="pool" value="{{ POOL_PRACTICE }}" />
+      <span class="pool-opt-body">
+        <b>연습</b>
+        <span class="chip">{{ pool_counts[POOL_PRACTICE] }}장</span>
+        <span class="small muted">
+          계측자가 손에 익히는 용도입니다.
+          <b>어떤 내보내기·집계에도 들어가지 않습니다.</b>
+          계측자는 자기 연습 기록을 스스로 비우고 다시 잴 수 있습니다.
+        </span>
+      </span>
+    </label>
+  </div>
+  <p class="small muted" style="margin:0.6rem 0 0">
+    같은 파일을 두 pool에 동시에 넣을 수는 없습니다 — 내용이 같으면 중복으로 걸립니다.
+    연습용은 본 계측에 쓰지 않을 영상으로 준비하세요.
+  </p>
+</div>
+
+<div class="card">
+  <div class="drop" id="drop">
+    <b>DICOM 파일을 여기로 끌어다 놓으세요</b><br />
+    <span class="small">또는 클릭해서 선택 · .dcm 다중 선택 · .zip 묶음도 가능</span>
+    <input type="file" id="fileInput" multiple accept=".dcm,.DCM,.zip,application/dicom"
+           style="display:none" />
+  </div>
+
+  <div class="progress-wrap hidden" id="progressWrap">
+    <div class="progress-meta">
+      <span id="progressLabel">준비 중…</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="bar"><div class="bar-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="row" style="margin-top:0.9rem">
+    <button class="primary" id="btnUpload" disabled>업로드 시작</button>
+    <button id="btnClear" disabled>목록 비우기</button>
+    <span class="small muted" id="summary"></span>
+  </div>
+
+  <div class="up-list hidden" id="upList"></div>
+</div>
+
+<div class="card">
+  <h2>참고</h2>
+  <ul class="small muted" style="margin:0; padding-left:1.1rem">
+    <li>같은 파일(내용 기준)을 두 번 올리면 <b>중복</b>으로 표시되고 다시 등재되지 않습니다.</li>
+    <li>렌더 해상도는 긴 변 {{ render_max_px }}px입니다. <a href="/admin/settings">설정</a>에서 변경할 수 있습니다.</li>
+    <li>영상 1장을 올리면 계측자 1인당 <b>{{ N_VARIABLES }}개 문제</b>가 늘어납니다.</li>
+    <li>픽셀 스페이싱은 <code>PixelSpacing</code> → <code>ImagerPixelSpacing</code> 순으로 읽습니다.
+        둘 다 없으면 등재는 되지만 mm 계측이 불가하므로 설정에서 수동 입력해야 합니다.</li>
+    <li>디코더 상태:
+      {% for name, ok in decoders.items() %}
+        <span class="chip {% if ok %}mm-ok{% else %}mm-bad{% endif %}">{{ name }} {{ '✓' if ok else '✗' }}</span>
+      {% endfor %}
+    </li>
+  </ul>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ static_url('upload.js') }}"></script>
+{% endblock %}

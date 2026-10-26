@@ -1,0 +1,16 @@
+# 가상환경
+.venv/
+__pycache__/
+*.pyc
+
+# 환경 설정 (초기 관리자 비밀번호가 들어간다)
+.env
+
+# 계정 메모 (평문 비밀번호가 들어간다) — ACCOUNTS.local.md 등
+*.local.md
+
+# 연구 데이터 — DB, 원본 DICOM, 렌더 PNG, 로그
+data/
+
+# 개발 부산물
+*.log
