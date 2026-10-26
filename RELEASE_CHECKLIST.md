@@ -29,7 +29,7 @@
 cd /Users/crex/LOCAL-DEV/picc-measure-tool
 bash scripts/check_release.sh          # FAIL 0 확인
 
-gh repo create <OWNER>/picc-measure-tool --public \
+gh repo create PSJCreX/picc-measure-tool --public \
   --description "Web-based expert measurement tool with per-item timing, for an AI-versus-radiologist comparison on chest radiographs" \
   --source . --remote origin --push
 ```
@@ -37,7 +37,7 @@ gh repo create <OWNER>/picc-measure-tool --public \
 `gh` 가 없으면 웹에서 빈 저장소를 만들고:
 
 ```bash
-git remote add origin https://github.com/<OWNER>/picc-measure-tool.git
+git remote add origin https://github.com/PSJCreX/picc-measure-tool.git
 git push -u origin main
 ```
 
@@ -84,7 +84,7 @@ Zenodo 레코드가 뜨는 데 몇 분 걸릴 수 있다. **DOI 를 논문에 �
 ```
 Code availability
 The web-based measurement tool used for the reader study is openly
-available at https://github.com/<OWNER>/picc-measure-tool and archived
+available at https://github.com/PSJCreX/picc-measure-tool and archived
 at Zenodo (doi:10.5281/zenodo.XXXXXXX). The trained model weights and
 inference code are available from the corresponding author upon
 reasonable request, subject to institutional approval.
