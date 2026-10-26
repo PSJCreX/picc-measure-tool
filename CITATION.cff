@@ -11,7 +11,7 @@ authors:
   - family-names: "Park"
     given-names: "Sung-Joon"
     # orcid: "https://orcid.org/XXXX-XXXX-XXXX-XXXX"   # 공개 전 채울 것
-    affiliation: "<AFFILIATION>"   # 공개 전 채울 것
+    affiliation: "Department of Radiology, Korea University College of Medicine, Korea University Ansan Hospital, Ansan, South Korea"
 license: MIT
 repository-code: "https://github.com/<OWNER>/<REPO>"
 version: "1.0.0"
