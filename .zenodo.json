@@ -1,0 +1,20 @@
+{
+  "title": "PICC web measurement tool",
+  "description": "<p>A web application for collecting expert endpoint measurements, with per-item timing, on chest radiographs. It provides the reader arm of an AI-versus-radiologist comparison for PICC insertion-length prediction.</p>",
+  "upload_type": "software",
+  "license": "MIT",
+  "creators": [
+    {
+      "name": "Park, Sung-Joon",
+      "affiliation": "<AFFILIATION>"
+    }
+  ],
+  "keywords": [
+    "radiology",
+    "chest radiograph",
+    "PICC",
+    "interobserver agreement",
+    "reader study"
+  ],
+  "access_right": "open"
+}

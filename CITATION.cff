@@ -8,14 +8,14 @@ abstract: >-
   of an AI-versus-radiologist comparison for PICC insertion-length
   prediction.
 authors:
-  - family-names: "<FAMILY NAME>"
-    given-names: "<GIVEN NAMES>"
-    orcid: "https://orcid.org/0000-0000-0000-0000"
-    affiliation: "<AFFILIATION>"
+  - family-names: "Park"
+    given-names: "Sung-Joon"
+    # orcid: "https://orcid.org/XXXX-XXXX-XXXX-XXXX"   # 공개 전 채울 것
+    affiliation: "<AFFILIATION>"   # 공개 전 채울 것
 license: MIT
 repository-code: "https://github.com/<OWNER>/<REPO>"
 version: "1.0.0"
-date-released: "2026-__-__"
+# date-released: "2026-11-01"   # 릴리스 당일 날짜로 채울 것 (YYYY-MM-DD)
 keywords:
   - radiology
   - chest radiograph
