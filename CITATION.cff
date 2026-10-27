@@ -10,7 +10,7 @@ abstract: >-
 authors:
   - family-names: "Park"
     given-names: "Sung-Joon"
-    # orcid: "https://orcid.org/XXXX-XXXX-XXXX-XXXX"   # 공개 전 채울 것
+    orcid: "https://orcid.org/0000-0002-1187-7671"
     affiliation: "Department of Radiology, Korea University College of Medicine, Korea University Ansan Hospital, Ansan, South Korea"
 license: MIT
 repository-code: "https://github.com/PSJCreX/picc-measure-tool"
