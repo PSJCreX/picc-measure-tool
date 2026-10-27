@@ -1,5 +1,8 @@
 # PICC web measurement tool
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23690009.svg)](https://doi.org/10.5281/zenodo.23690009)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A web application for collecting **expert endpoint measurements, with per-item
 timing**, on chest radiographs. It was built to provide the reader arm of an
 AI-versus-radiologist comparison for PICC (peripherally inserted central
