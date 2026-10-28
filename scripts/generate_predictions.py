@@ -1,5 +1,9 @@
 """AI 예측을 생성해 `predictions` 테이블에 저장한다.
 
+모델·전처리·좌표 역변환은 **전부 `picc_infer_core` 에서 가져온다.** 예전에는 이
+파일이 같은 로직을 따로 들고 있었고, 그래서 한쪽만 고쳐지면 배치 예측과 요청 시
+예측이 조용히 어긋날 수 있었다. 지금은 정의가 한 곳뿐이다.
+
 측정 기준 (2026-10-07 연구책임자 확정)
 --------------------------------------
 * **모델 로드 시간은 제외한다.** 사람 쪽 `duration_ms` 도 사진이 뜬 뒤부터
@@ -7,10 +11,8 @@
   아니다. 모델은 프로세스 시작에 한 번만 로드한다.
 * **워밍업 3회 후 5회의 중앙값.** 첫 추론은 CUDA 커널 컴파일·캐시 때문에 몇 배
   느리다. 그 값을 쓰면 모델을 부당하게 느리게 보고하는 셈이다.
-* **픽셀 스페이싱은 웹툴 DB 값**(`images.pixel_spacing_mm`)을 쓴다. 추론 코드의
-  `load_dicom_image` 는 `PixelSpacing` 만 읽고 없으면 0.2mm 로 고정하는데,
-  test set 의 약 23% 가 `ImagerPixelSpacing` 만 갖고 있다. 그 폴백을 쓰면 오차가
-  모델 성능이 아니라 단위 환산에서 나온다.
+* **픽셀 스페이싱은 웹툴 DB 값**(`images.pixel_spacing_mm`)을 쓴다. 전문의 계측값이
+  그 값으로 mm 로 환산됐으므로 모델 출력도 같은 값을 써야 비교가 성립한다.
 
 전처리 시간(`preprocess_ms`)은 **따로** 저장한다 — 논문의 대표 숫자는 순수 추론
 시간이지만, "영상을 읽는 것까지 포함하면" 을 나중에 묻게 될 수 있다. 다시 돌리지
@@ -24,10 +26,9 @@
 from __future__ import annotations
 
 import argparse
-import shutil
-import sqlite3
-import statistics
+import json
 import os
+import sqlite3
 import sys
 import time
 from datetime import datetime
@@ -42,56 +43,11 @@ DB = WEB_DATA / "app.db"
 
 sys.path.insert(0, str(INFER_ROOT))
 
-import numpy as np                                    # noqa: E402
-import cv2                                            # noqa: E402
-import pydicom                                        # noqa: E402
 import torch                                          # noqa: E402
-
-MODELS = [
-    ("right_clavicle",    "right_clavicle_detection",    "RightClavicleKeypointDetector",   "right_clavicle_detector.pth",    7, (0, 4)),
-    ("left_clavicle",     "left_clavicle_detection",     "LeftClavicleKeypointDetector",    "left_clavicle_detector.pth",     7, (0, 4)),
-    ("right_hvd",         "right_hvd_detection",         "RightHVDKeypointDetector",        "right_hvd_detector.pth",         2, (0, 1)),
-    ("left_hvd",          "left_hvd_detection",          "LeftHVDKeypointDetector",         "left_hvd_detector.pth",          2, (0, 1)),
-    ("right_tcd",         "right_tcd_detection",         "RightTCDKeypointDetector",        "right_tcd_detector.pth",         2, (0, 1)),
-    ("left_tcd",          "left_tcd_detection",          "LeftTCDKeypointDetector",         "left_tcd_detector.pth",          2, (0, 1)),
-    ("second_ribs_width", "second_ribs_width_detection", "SecondRibsWidthKeypointDetector", "second_ribs_width_detector.pth", 2, (0, 1)),
-    ("two_vbu",           "two_vbu_detection",           "TwoVBUKeypointDetector",          "two_vbu_detector.pth",           7, None),
-]
-
-TARGET = 512
-WARMUP = 3
-REPEAT = 5
-
-
-def preprocess(dicom_path: Path):
-    """추론 코드(`load_dicom_image`)와 동일한 전처리. 역변환 정보도 돌려준다."""
-    ds = pydicom.dcmread(str(dicom_path))
-    image = ds.pixel_array
-    oh, ow = image.shape[:2]
-
-    image = image.astype(np.float32)
-    rng = image.max() - image.min()
-    image = (image - image.min()) / (rng if rng else 1.0)
-
-    if ow > oh:
-        new_w, new_h = TARGET, int(oh * TARGET / ow)
-    else:
-        new_h, new_w = TARGET, int(ow * TARGET / oh)
-
-    resized = cv2.resize(image, (new_w, new_h))
-    padded = np.zeros((TARGET, TARGET), dtype=np.float32)
-    pad_h = (TARGET - new_h) // 2
-    pad_w = (TARGET - new_w) // 2
-    padded[pad_h:pad_h + new_h, pad_w:pad_w + new_w] = resized
-
-    return padded, {"orig_w": ow, "orig_h": oh, "pad_w": pad_w, "pad_h": pad_h,
-                    "scale": max(ow, oh) / TARGET}
-
-
-def to_original(x512: float, y512: float, geo: dict) -> list[float]:
-    """512 패딩 좌표 → DICOM 원본 px (계측과 같은 좌표계)."""
-    return [(x512 - geo["pad_w"]) * geo["scale"],
-            (y512 - geo["pad_h"]) * geo["scale"]]
+from picc_infer_core import (                         # noqa: E402
+    REPEAT, WARMUP, device_info, load_models, measure_one,
+    preprocess, warmup,
+)
 
 
 def main() -> int:
@@ -106,8 +62,7 @@ def main() -> int:
                     help="결과를 JSON 으로 stdout 에 — 웹 엔드포인트가 쓴다")
     args = ap.parse_args()
 
-    dev = "cuda" if torch.cuda.is_available() else "cpu"
-    dev_name = torch.cuda.get_device_name(0) if dev == "cuda" else "cpu"
+    dev, dev_name = device_info()
     log = (lambda *a, **k: print(*a, file=sys.stderr, **k)) if args.json else print
     log(f"장치: {dev} ({dev_name})  torch {torch.__version__}")
     if dev == "cuda":
@@ -152,29 +107,14 @@ def main() -> int:
 
     log("\n모델 로드 (측정에서 제외)")
     t0 = time.perf_counter()
-    loaded = []
-    for key, mod_name, cls_name, wfile, maxp, idx in MODELS:
-        wpath = MODELS_DIR / wfile
-        if not wpath.exists():
-            log(f"  X {key}: 가중치 없음 — 건너뜀"); continue
-        mod = __import__(mod_name)
-        net = getattr(mod, cls_name)(max_points=maxp, use_pretrained=False)
-        st = torch.load(wpath, map_location="cpu", weights_only=False)
-        net.load_state_dict(st["model_state_dict"] if "model_state_dict" in st else st)
-        net.eval().to(dev)
-        loaded.append((key, net, idx, wfile))
+    loaded = load_models(MODELS_DIR, dev,
+                         on_step=lambda i, n, key: log(f"  {i}/{n} {key}"))
     log(f"  {len(loaded)}개 / {time.perf_counter() - t0:.1f}s")
     if not loaded:
         log("쓸 수 있는 모델이 없습니다."); return 1
 
     # 전역 워밍업 — 커널 컴파일은 프로세스에 한 번이면 된다
-    dummy = torch.zeros(1, 1, TARGET, TARGET, device=dev)
-    with torch.no_grad():
-        for _ in range(WARMUP):
-            for _k, net, _i, _w in loaded:
-                net(dummy)
-    if dev == "cuda":
-        torch.cuda.synchronize()
+    warmup(loaded, dev)
     log(f"  워밍업 {WARMUP}회 완료\n")
 
     wcon = None if args.dry_run else sqlite3.connect(DB, timeout=30)
@@ -195,39 +135,17 @@ def main() -> int:
         x = torch.from_numpy(padded)[None, None].to(dev)
 
         per_item = []
-        for key, net, idx, wfile in todo:
-            samples = []
-            with torch.no_grad():
-                for _ in range(REPEAT):
-                    if dev == "cuda":
-                        torch.cuda.synchronize()
-                    t1 = time.perf_counter()
-                    out = net(x)
-                    if dev == "cuda":
-                        torch.cuda.synchronize()
-                    samples.append((time.perf_counter() - t1) * 1000)
-            ms = statistics.median(samples)
-
-            kp = out["keypoints"][0].detach().cpu().numpy()
-            ex = out["existence_probs"][0].detach().cpu().numpy()
-            if idx is None:                     # two_vbu — 유효 점의 첫/마지막
-                valid = [i for i in range(len(ex)) if ex[i] > 0.5]
-                pick = (valid[0], valid[-1]) if len(valid) >= 2 else (0, 1)
-            else:
-                pick = idx
-            pts = [to_original(float(kp[i][0]), float(kp[i][1]), geo) for i in pick]
-            d = float(np.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]))
-            mm = d * spacing if spacing else None
-
-            per_item.append((key, pts, mm, ms, wfile))
+        for key, net, axis, wfile in todo:
+            r = measure_one(net, x, axis, dev, geo, spacing)
+            per_item.append((key, r["points"], r["value_mm"], r["infer_ms"], wfile))
             collected.setdefault(img_id, []).append({
-                "variable_key": key, "points": pts, "value_mm": mm,
-                "infer_ms": ms, "preprocess_ms": pre_ms,
+                "variable_key": key, "points": r["points"],
+                "value_mm": r["value_mm"], "infer_ms": r["infer_ms"],
+                "preprocess_ms": pre_ms,
             })
             n_pred += 1
 
         if wcon:
-            import json as _json
             for key, pts, mm, ms, wfile in per_item:
                 wcon.execute("""
                     INSERT INTO predictions
@@ -241,7 +159,7 @@ def main() -> int:
                       device=excluded.device, device_name=excluded.device_name,
                       torch_version=excluded.torch_version,
                       model_file=excluded.model_file, created_at=datetime('now')
-                """, (img_id, key, _json.dumps(pts), mm, ms, pre_ms, dev, dev_name,
+                """, (img_id, key, json.dumps(pts), mm, ms, pre_ms, dev, dev_name,
                       torch.__version__, wfile,
                       f"warmup={WARMUP} repeat={REPEAT} median; spacing from web DB"))
             wcon.commit()
@@ -249,16 +167,15 @@ def main() -> int:
         n_img += 1
         tot = sum(p[3] for p in per_item)
         log(f"  #{img_id:<4} {fname[:22]:22s} {len(per_item)}항목 "
-              f"추론 {tot:6.1f}ms  전처리 {pre_ms:6.1f}ms")
+            f"추론 {tot:6.1f}ms  전처리 {pre_ms:6.1f}ms")
 
     if wcon:
         wcon.close()
     el = time.perf_counter() - t_all
     log(f"\n영상 {n_img}장 / 예측 {n_pred}건 / 총 {el:.1f}s"
-          f"{' (dry-run — 저장 안 함)' if args.dry_run else ''}")
+        f"{' (dry-run — 저장 안 함)' if args.dry_run else ''}")
     if args.json:
-        import json as _json
-        print(_json.dumps({
+        print(json.dumps({
             "ok": True,
             "device": dev, "device_name": dev_name,
             "torch_version": torch.__version__,

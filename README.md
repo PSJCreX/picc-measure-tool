@@ -165,10 +165,14 @@ destroyed a reader's work in progress.
 
 - **Radiographs.** The images contain protected health information and are not
   distributable.
-- **Trained model weights and the detection networks.** This repository is the
-  measurement tool only. `scripts/predict_stream.py` is the bridge that calls
-  an inference environment, if one is configured; without it the AI-measurement
-  feature is inactive and everything else works.
+- **Trained model weights.** `scripts/model.py` carries the landmark network
+  used in the study — an EfficientNet-B0 backbone whose stride-8, -16 and -32
+  features are fused into a 64 x 64 heatmap per landmark point, decoded to
+  continuous coordinates by spatial softmax and soft-argmax. The trained
+  weights are not distributable here. `scripts/picc_infer_core.py` loads them
+  from a directory given at run time, and `scripts/predict_stream.py` is the
+  bridge the application calls; without weights the AI-measurement feature is
+  inactive and everything else works.
 
 ## Licence and citation
 

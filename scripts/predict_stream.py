@@ -102,10 +102,10 @@ def main() -> int:
     # 4) 측정 — 항목별 REPEAT 회 중앙값
     emit("measure_begin", n=len(loaded))
     results = []
-    for i, (key, net, idx, wfile) in enumerate(loaded, 1):
+    for i, (key, net, axis, wfile) in enumerate(loaded, 1):
         emit("measure", i=i, n=len(loaded), key=key,
              label=DISPLAY.get(key, key))
-        r = measure_one(net, x, idx, dev, geo, spacing)
+        r = measure_one(net, x, axis, dev, geo, spacing)
         r.update(variable_key=key, label=DISPLAY.get(key, key),
                  preprocess_ms=pre_ms, model_file=wfile)
         results.append(r)
