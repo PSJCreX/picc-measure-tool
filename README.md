@@ -1,5 +1,6 @@
 # PICC web measurement tool
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23725971.svg)](https://doi.org/10.5281/zenodo.23725971)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A web application for collecting **expert endpoint measurements, with per-item
